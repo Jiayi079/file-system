@@ -1,7 +1,9 @@
 /**************************************************************
-* Class:  CSC-415
-* Name: Professor Bierman
-* Student ID: N/A
+* Class:  CSC-415-01 Fall 2022
+* Names:Jiaming Zhao, Jiayi Gu, Carmelo De Guzman, Congcheng Zeng
+* Student IDs:921891383, 920024739, 918749005, 918327792
+* GitHub Name:akizhao614, Jiayi079, carmelodz, Congchengz
+* Group Name:JCJC
 * Project: Basic File System
 *
 * File: mfs.h
@@ -17,6 +19,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "b_io.h"
 
@@ -85,6 +90,34 @@ struct fs_stat
 	};
 
 int fs_stat(const char *path, struct fs_stat *buf);
+
+//Struct for our VCB
+typedef struct VCB{
+
+	uint64_t numberOfBlocks;  			//integer variable for the number of blocks in VCB
+	uint64_t blockSize;					//variable bytes for the size of each blocks in VCB (512 bytes) 
+	uint64_t rootLocation;				//integer variable for root directory location (256 bytes)
+
+	unsigned int VCB_blockCount; 		//integer variable for starting position of free block space VCB (2560 bytes)
+	unsigned int freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
+	uint64_t current_FreeBlockIndex;	//integer index variable for current free blocks in VCB
+	
+	uint64_t magicNumber;				//integer variable for magic number, useful when opening files based on their 
+										//file Signature, and also for hex dumps 
+					
+
+	int * free_block_ptr;				//the pointer to track our free space
+	unsigned int free_block_count;		//the total numbers of the free blocks
+
+}volume_ControlBlock;
+
+
+//VCB related functions
+int update_VCB();
+
+//Global variables for VCB 
+volume_ControlBlock * JCJC_VCB;
+
 
 #endif
 

@@ -24,23 +24,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-typedef struct VCB{
-
-	int num_blocks;  			//integer variable for the number of blocks in VCB
-	int blockSize = 512;			//variable bytes for the size of each blocks in VCB 
-	int rootLocation [256];		//integer variable for root directory location 
-
-	int freeSpace = 2560; 			//integer variable bytes for free block space left in VCB
-	
-	//integer variable for magic number, useful when opening files based on their 
-	//File Signature, and also for hex dumps 
-	long signature;				
-
-	int * free_block_ptr;			//the pointer to track our free space
-	int  free_block_count;			//the total numbers of the free blocks
-
-}volume_ControlBlock;
-
+#define Magic_Number 123 
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -48,12 +32,62 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
 	
+	//Using the size of our VCB and mod with blockSize, determine how
+	//many blocks are needed when initializing file system
+	unsigned int blockCount_VCB = sizeof(JCJC_VCB) / blockSize;
+
+	if(sizeof(JCJC_VCB) % blockSize > 0){
+		blockCount_VCB++;
+	}
+
+
+	//Check if volume is formated & initialized by cross-matching
+	//the Magic Number we previously defined. If not, then init
+	if (Magic_Number == JCJC_VCB -> magicNumber){
+
+
+	} else {
+
+
+	}
+
+
+	//VCB status debugging 
+	printf("*****VCB Status Overview*****");
+	printf("VCB has this number of blocks: %ld", JCJC_VCB -> numberOfBlocks);
+	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
+
 	
 	return 0;
 	}
+
+
+
+
 	
 	
 void exitFileSystem ()
 	{
 	printf ("System exiting\n");
+	}
+
+//Initializing the VCB
+int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB)
+	{
+
+		//Using memset(), initialize a block of memory for our VCB, with value 0
+		//based on the size of our VCB
+		memset(JCJC_VCB, 0, sizeof(volume_ControlBlock));
+
+		//Initialize our VCB with these deault values 
+		JCJC_VCB -> numberOfBlocks = numberOfBlocks;
+		JCJC_VCB -> blockSize = blockSize;
+		JCJC_VCB -> VCB_blockCount = blockCount_VCB;
+		JCJC_VCB -> current_FreeBlockIndex = 0;
+		JCJC_VCB -> magicNumber = Magic_Number;
+
+
+
+		return 0;
+
 	}

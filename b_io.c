@@ -32,12 +32,12 @@ typedef struct b_fcb
 	int buflen;		//holds how many valid bytes are in the buffer
 
 	
-	char file_name[256]; 			//character variable to store file name
-	int location;			 //integer variable to store file location
-	size_t file_size;				 //variable for file size
-	// int create_date; 			//variable for file create date
-	// int last_access_date; 			//variable for when you access/modify the file’s date
-	// char comment [300]; 			// comment for the file
+	// char file_name[256]; 			//character variable to store file name
+	// int location;			 //integer variable to store file location
+	// size_t file_size;				 //variable for file size
+	// // int create_date; 			//variable for file create date
+	// // int last_access_date; 			//variable for when you access/modify the file’s date
+	// // char comment [300]; 			// comment for the file
 
 	} b_fcb;
 	
