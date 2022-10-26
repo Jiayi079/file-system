@@ -24,7 +24,9 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-#define Magic_Number 123 
+#define Magic_Number 123
+
+// int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -57,9 +59,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("VCB has this number of blocks: %ld", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
 
-	
+
+
 	return 0;
-	}
+}
 
 
 
@@ -91,3 +94,4 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		return 0;
 
 	}
+
