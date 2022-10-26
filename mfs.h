@@ -99,7 +99,7 @@ typedef struct VCB{
 	uint64_t rootLocation;				//integer variable for root directory location (256 bytes)
 
 	unsigned int VCB_blockCount; 		//integer variable for starting position of free block space VCB (2560 bytes)
-	unsigned int freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
+	uint64_t freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
 	uint64_t current_FreeBlockIndex;	//integer index variable for current free blocks in VCB
 	
 	uint64_t magicNumber;				//integer variable for magic number, useful when opening files based on their 
@@ -114,6 +114,7 @@ typedef struct VCB{
 
 //VCB related functions
 int update_VCB();
+unsigned int getVCB_BlockCount(uint64_t);
 
 //Global variables for VCB 
 volume_ControlBlock * JCJC_VCB;
