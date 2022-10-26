@@ -28,6 +28,13 @@
 
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
+//global variable
+int * freespace;
+
+int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+int init_freeSpace();
+int init__RootDir();
+
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -61,10 +68,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 
 
+
 	return 0;
 }
-
-
 
 
 	
@@ -94,4 +100,44 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		return 0;
 
 	}
+
+
+//init freespace
+int init_freeSpace(volume_ControlBlock * JCJC_VCB){
+
+	//init the bitmap array
+	freespace = malloc(5*JCJC_VCB->numberOfBlocks);
+	
+	// printf("freespace: %ls", freespace);
+
+	if(freespace == NULL){
+		printf("malloc failed");
+		exit (-1);
+	}
+
+	//0 is free, 1 is exist 
+	//set free space array total is numberOfBlocks
+	memset(freespace, 0, JCJC_VCB->numberOfBlocks);
+
+	// 0 --> vcb  1-5 --> bitmap
+	memset(freespace, 1, 6);
+
+	// write 5 blocks starting from block 1 
+	int LBAwrite_return = LBAwrite(freespace, 5, 1);
+
+	if (LBAwrite_return != 5)
+	{
+		printf("LBAwrite failed!");
+	}
+
+
+
+	return 0;
+
+}
+
+
+int init__RootDir(volume_ControlBlock * JCJC_VCB){
+	
+}
 
