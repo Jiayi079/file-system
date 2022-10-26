@@ -65,7 +65,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
 
 	
-	
+	LBAread
+	LBAwrite(, 5, 0);
+
 
 	return 0;
 
