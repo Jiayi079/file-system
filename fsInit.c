@@ -26,6 +26,13 @@
 
 #define Magic_Number 123 
 
+//global variable
+int * freespace;
+
+int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+int init_freeSpace();
+int init__RootDir();
+
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -58,12 +65,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
 
 	
+	
+
 	return 0;
+
 	}
-
-
-
-
 	
 	
 void exitFileSystem ()
@@ -91,3 +97,36 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		return 0;
 
 	}
+
+
+//init freespace
+int init_freeSpace(volume_ControlBlock * JCJC_VCB){
+
+	//init the bitmap array
+	freespace = malloc(5*numberOfBlocks);
+	
+	// printf("freespace: %ls", freespace);
+
+	if(freespace == NULL){
+		printf("malloc failed");
+		exit (-1);
+	}
+
+	//0 is free, 1 is exist 
+	//set free space array total is numberOfBlocks
+	memset(freespace, 0, JCJC_VCB->numberOfBlocks);
+
+	// 0 --> vcb  1-5 --> bitmap
+	memset(freespace, 1, 6);
+
+	// write 5 blocks starting from block 1 
+	LBAwrite(freespace, 5, 1);
+
+	return 0;
+
+}
+
+
+// int init__RootDir(){
+
+// }

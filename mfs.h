@@ -106,7 +106,7 @@ typedef struct VCB{
 										//file Signature, and also for hex dumps 
 					
 
-	int * free_block_ptr;				//the pointer to track our free space
+	// int * free_block_ptr;				//the pointer to track our free space
 	unsigned int free_block_count;		//the total numbers of the free blocks
 
 }volume_ControlBlock;
