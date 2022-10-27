@@ -23,14 +23,12 @@
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "helperFunctions.c"
 
-<<<<<<< HEAD
 
 #define Magic_Number 123456
-=======
 #define Magic_Number 123456
 
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
@@ -38,15 +36,12 @@
 int * freespace;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
-<<<<<<< HEAD
 int init_freeSpace();
 int init__RootDir();
 
-=======
 void exitFileSystem ();
 int init_freeSpace ();
 int init__RootDir ();
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -103,32 +98,90 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 		LBAread(vcb_Buffer, JCJC_VCB -> freeSpace_BlockCount, JCJC_VCB -> VCB_blockCount);
 
+		// copy the needed amount of block space into freespace
+		freespace = malloc(JCJC_VCB -> numberOfBlocks);
+		if (freespace == NULL)
+		{
+			printf("failed to malloc freespace\n");
+			return -1;
+		}
+
+		memcpy(freespace, vcb_Buffer, JCJC_VCB -> numberOfBlocks);
+
+		//Free our VCB buffer and set equal to NULL
+		free(vcb_Buffer);
+		vcb_Buffer = NULL;
+
+		//Set the root directory as our initial working directory
+		vcb_Buffer = malloc(getVCB_BlockCount(sizeof(fdDir)) * JCJC_VCB -> blockSize);
+		if (vcb_Buffer == NULL)
+		{
+			printf("failed to malloc vcb_Buffer for root directory\n");
+			return -1;
+		}
+
+		LBAread(vcb_Buffer, getVCB_BlockCount(sizeof(fdDir)), JCJC_VCB -> location_RootDirectory);
+
+		//Initialize our root directory pointer for our VCB
+		rootDir_ptr = malloc(sizeof(fdDir));
+		if (rootDir_ptr == NULL)
+		{
+			printf(" failed to malloc root directory\n");
+			return -1;
+		}
+
+		memcpy(rootDir_ptr, vcb_Buffer, sizeof(fdDir));
+
+		//Free our VCB buffer and set equal to NULL
+		free(vcb_Buffer);
+		vcb_Buffer = NULL;
 
 	} else {
 
-		
+		//If all values are not at defualt 0, then volume is not formatted 
+		if (init_VCB(numberOfBlocks, blockSize, blockCount_VCB) != 0)
+		{
+
+			printf("VCB has not been formated and initialized\n");
+			return -1;
+		}
+
+		if (init_freeSpace(JCJC_VCB, JCJC_VCB -> VCB_blockCount) != 0)
+		{
+
+			printf("Freespace has not been formated and initialized\n");
+			return -1;
+		}
+
+		if (init__RootDir(JCJC_VCB) != 0)
+		{
+			printf("Root Directory has not been formated and initialized\n");
+			return -1;
+		}
 
 	}
 	init_VCB(numberOfBlocks, blockSize, blockCount_VCB);
 
 	//VCB status debugging 
-<<<<<<< HEAD
-	printf("*****VCB Status Overview*****");
+	printf("*****VCB Status Overview*****\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 
 	
 	// LBAread
 	// LBAwrite(, 5, 0);
-=======
 	printf("*****VCB Status Overview*****\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 	printf("VCB has this block count: %ld\n", blockCount_VCB);
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 	init_freeSpace(JCJC_VCB, blockCount_VCB);
 	init__RootDir(JCJC_VCB);
+
+	//Set opened directory pointer to NULL
+	//and reset openedDir index to 0
+	current_OpenedDir_ptr = NULL;
+	current_OpenedDir_index = 0;
 
 	return 0;
 }
@@ -159,14 +212,14 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		//then we can get the number of blocks needed for the initialized VCB
 
 
-		// u_int64_t bytes_PerBlock = numberOfBlocks / 8;
-		// if(numberOfBlocks % 8 > 0){
+		u_int64_t bytes_PerBlock = numberOfBlocks / 8;
+		if(numberOfBlocks % 8 > 0){
 
-		// 	bytes_PerBlock++;
+			bytes_PerBlock++;
 
-		// }
+		}
 
-		// JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
+		JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
 
 
 		return 0;
@@ -182,7 +235,7 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 	freespace = malloc(5*JCJC_VCB->numberOfBlocks);
 
 	if(freespace == NULL){
-		printf("freespace malloc failed");
+		printf("freespace malloc failed\n");
 		exit (-1);
 	}
 
@@ -206,7 +259,7 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 	if (LBAwrite_return != 5)
 	{
-		printf("LBAwrite failed!");
+		printf("LBAwrite failed!\n");
 	}
 
 	// should current used block of the free space
@@ -217,22 +270,32 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
-	//malloc the fdDir
-	fdDir * dir = malloc(sizeof(fdDir));
+	//malloc our root_Dir
+	fdDir * root_Dir = malloc(sizeof(fdDir));
 
-	if(open_dir == NULL){
-		printf("open dir failed!\n");
-		exit(-1);
+	if(root_Dir == NULL){
+
+		printf("root_dir failed to initialize!\n");
+		return -1;
 	}
 
+	//Set our root directory location to 0
+	memset(root_Dir, 0, sizeof(fdDir));
+	
 
-	memset(dir, 0, sizeof(fdDir));
+	//Set the root directory as the initial directory location 
+	rootDir_ptr = root_Dir;
+	JCJC_VCB -> location_RootDirectory = rootDir_ptr -> directoryStartLocation;
+
+
 
 	int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
     if (dirBlockCount % JCJC_VCB->blockSize > 0)
     {
         dirBlockCount++;
     }
+
+
 
 	printf("dirBlockCount: %d\n", dirBlockCount);
 	
