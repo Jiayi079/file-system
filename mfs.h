@@ -134,6 +134,12 @@ uint64_t current_OpenedDir_index;
 int * freespace;
 
 
+int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+void exitFileSystem ();
+int init_freeSpace ();
+int init__RootDir ();
+
+
 
 
 typedef struct Directory_Entry{

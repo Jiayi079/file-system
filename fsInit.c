@@ -23,24 +23,18 @@
 
 #include "fsLow.h"
 #include "mfs.h"
-// #include "helperFunctions.c"
+#include "helperFunctions.c"
 #include "helperFunctions.h"
+#include "bitmap.c"
 
-
-#define Magic_Number 123456
+#define Magic_Number 123456 //Will change later, temp placeholder
 
 
 // #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
-//global variable
 int dir_DE_count = 50; //set 50 for now as an example
 
-int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
-void exitFileSystem ();
-int init_freeSpace ();
-int init__RootDir ();
-int allocateFreeSpace (volume_ControlBlock * JCJC_VCB, int NumberOfBlock);
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -223,7 +217,7 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 	//init the bitmap array -> 5 blocks
-	freespace = malloc(5*JCJC_VCB->blockSize);
+	freespace = malloc(5 * JCJC_VCB -> blockSize);
 
 	if(freespace == NULL){
 		printf("freespace malloc failed\n");
@@ -236,17 +230,17 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 	// if (freespace)
 
 	//0 -> free, 1 -> allocated
-	//set free space array total is numberOfBlocks(19531 bits)
-	memset(freespace, 0, JCJC_VCB->numberOfBlocks);
+	//Set the free space array total as the numberOfBlocks(19531 bits)
+	memset(freespace, 0, JCJC_VCB -> numberOfBlocks);
 
 	// 0 --> vcb  1-5 --> bitmap
-	memset(freespace, 1, blockCount_VCB + JCJC_VCB->freeSpace_BlockCount);
+	memset(freespace, 1, blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount);
 
 
-	// write 5 blocks starting from block 1 
+	//Write 5 blocks starting from block 1 
 	int LBAwrite_return = LBAwrite(freespace, 5, 1);
 
-	JCJC_VCB->current_FreeBlockIndex += blockCount_VCB + JCJC_VCB->freeSpace_BlockCount;
+	JCJC_VCB->current_FreeBlockIndex += blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount;
 
 	if (LBAwrite_return != 5)
 	{
@@ -256,31 +250,31 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 	free(freespace);
 	freespace = NULL;
 
-	// should current used block of the free space
-	// to the VCB init
-	return blockCount_VCB + JCJC_VCB->freeSpace_BlockCount;
+	//Set current block as" used" in the free space
+	//and update it to the VCB 
+	return blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount;
 }
 
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
-	//find out how may block in dir by using the getVCB_BlokCount function
+	//Find out how may blocks in dir by using the getVCB_BlokCount function
 	int dir_block_count = getVCB_BlockCount(sizeof(Directory_Entry) * dir_DE_count);
 
-	//then use getVCB_num_bytes to find out how many dir bytes we will need
+	//Use getVCB_num_bytes to find out how many bytes in dir we will need
     int dir_num_bytes = getVCB_num_bytes(dir_block_count);
 
-	//allocate the bytes in dir we have 
+	//Allocate the number of bytes in dir, we had previously found from dir_num_bytes
     Directory_Entry * de = malloc(dir_num_bytes);
 
-	//set the first dir name as "."
+	//Set the first dir name as "."
     strcpy(de[0].dir_name, ".");
 
-	//use alllocateFreeSpace function to find out the free space we can use in directory
-    de[0].dir_Location = allocateFreeSpace(dir_num_bytes);
+	//Use alllocateFreeSpace function to determine the free space we can use in the directory
+    de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);
     de[0].size = dir_num_bytes;
 
-	//
+	//Check if our first directory location exists, throw error if it doesn't exsist
     if (de[0].dir_Location == -1)
     {
         printf("allocation of directory location failed\n");
@@ -289,11 +283,9 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
         exit(-1);
     }
 
+	
 
-
-
-
-
+	//Scraped code, maybe for later use?
 
 	// //malloc our root_Dir
 	// fdDir * root_Dir = malloc(sizeof(fdDir));
@@ -340,10 +332,10 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 	// 	exit(-1);
 	// }
 
-	//Set the root directory as the initial directory location 
-	// rootDir_ptr = root_Dir;
+	
+//Set the root directory, de, as the initial directory location
+	// rootDir_ptr = de;
 	// JCJC_VCB -> location_RootDirectory = rootDir_ptr -> directoryStartLocation;
-
 
 
 	// memset(dir, 0, sizeof(fdDir));
