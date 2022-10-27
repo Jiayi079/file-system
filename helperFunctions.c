@@ -31,6 +31,7 @@ unsigned int getVCB_BlockCount(uint64_t bl_number)
     return result;
 }
 
+//function to find out the how many continue freespace we can use 
 int allocateFreeSpace(int block_count_needed)
 {
     int freespace_start_location = JCJC_VCB->current_FreeBlockIndex;
@@ -82,12 +83,15 @@ int allocateFreeSpace(int block_count_needed)
     return -1; // don't have enough free space
 }
 
+
+//function to get how many bytes from our vcb
 unsigned int getVCB_num_bytes(uint64_t block_count)
 {
     int result = block_count * JCJC_VCB->blockSize;
     return result;
 }
 
+//function to check the current bit is in use or a free space
 int checkBit(uint64_t block_index, int * freespace)
 {
     return (freespace[block_index / 8] & (1 << block_index % 8)) != 0;

@@ -264,15 +264,23 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
+	//find out how may block in dir by using the getVCB_BlokCount function
 	int dir_block_count = getVCB_BlockCount(sizeof(Directory_Entry) * dir_DE_count);
+
+	//then use getVCB_num_bytes to find out how many dir bytes we will need
     int dir_num_bytes = getVCB_num_bytes(dir_block_count);
 
+	//allocate the bytes in dir we have 
     Directory_Entry * de = malloc(dir_num_bytes);
 
+	//set the first dir name as "."
     strcpy(de[0].dir_name, ".");
+
+	//use alllocateFreeSpace function to find out the free space we can use in directory
     de[0].dir_Location = allocateFreeSpace(dir_num_bytes);
     de[0].size = dir_num_bytes;
 
+	//
     if (de[0].dir_Location == -1)
     {
         printf("allocation of directory location failed\n");
