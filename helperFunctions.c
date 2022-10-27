@@ -28,3 +28,17 @@ unsigned int getVCB_BlockCount(uint64_t bl_number)
     return result;
 }
 
+int checkBit(uint64_t block_index, int * freespace)
+{
+    return (freespace[block_index / 8] & (1 << block_index % 8)) != 0;
+}
+
+void setBitUsed(uint64_t block_index, int * freespace)
+{
+    freespace[block_index / 8] |= (1 << block_index % 8);
+}
+
+void setBitFree(uint64_t block_index, int * freespace)
+{
+    freespace[block_index / 8] &= ~(1 << block_index % 8);
+}
