@@ -24,10 +24,8 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-<<<<<<< HEAD
 #define Magic_Number 123456
-=======
-#define Magic_Number 123
+
 
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
@@ -35,9 +33,9 @@
 int * freespace;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
-int init_freeSpace();
-int init__RootDir();
->>>>>>> 9b96e8b106c2ad1c2643c9d2a84e3a2ede8ccc88
+void exitFileSystem ();
+int init_freeSpace ();
+int init__RootDir ();
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -58,7 +56,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	char * vcb_Buffer = malloc(blockCount_VCB * blockSize);
 	if(vcb_Buffer == NULL){
 
-		printf("Failed to allocate the buffer for VCB");
+		printf("Failed to allocate the buffer for VCB\n");
 		return -1;
 	}
 
@@ -69,7 +67,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	JCJC_VCB = malloc(sizeof(volume_ControlBlock));
 	if(JCJC_VCB == NULL){
 
-		printf("Failed to allocate space in VCB");
+		printf("Failed to allocate space in VCB\n");
 		return -1;
 	}
 
@@ -88,7 +86,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb_Buffer = malloc(JCJC_VCB -> freeSpace_BlockCount * JCJC_VCB -> blockSize);
 		if(vcb_Buffer == NULL){
 
-			printf("failed to malloc vcb_Buffer");
+			printf("failed to malloc vcb_Buffer\n");
 			return -1;
 		}
 
@@ -100,22 +98,21 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		
 
 	}
-
+	init_VCB(numberOfBlocks, blockSize, blockCount_VCB);
 
 	//VCB status debugging 
-	printf("*****VCB Status Overview*****");
-	printf("VCB has this number of blocks: %ld", JCJC_VCB -> numberOfBlocks);
-	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
+	printf("*****VCB Status Overview*****\n");
+	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
+	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
+	printf("VCB has this block count: %ld\n", blockCount_VCB);
 
-
-
+	init_freeSpace(JCJC_VCB, blockCount_VCB);
+	init__RootDir(JCJC_VCB);
 
 	return 0;
 }
 
 
-	
-	
 void exitFileSystem ()
 	{
 	printf ("System exiting\n");
@@ -157,41 +154,47 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 
 
 //init freespace
-int init_freeSpace(volume_ControlBlock * JCJC_VCB){
+// *****? should we add blockCount_VCB to struct
+int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
-	//init the bitmap array
+	//init the bitmap array -> 5 blocks
 	freespace = malloc(5*JCJC_VCB->numberOfBlocks);
-	
-	// printf("freespace: %ls", freespace);
 
 	if(freespace == NULL){
-		printf("malloc failed");
+		printf("freespace malloc failed");
 		exit (-1);
 	}
 
-	//0 is free, 1 is exist 
-	//set free space array total is numberOfBlocks
+	// printf("numberofblock: %d\n", JCJC_VCB->numberOfBlocks);
+	// printf("freespace size: %d\n", sizeof(freespace));
+	// check pointer is at least 2442 bytes
+	// if (freespace)
+
+	//0 -> free, 1 -> allocated
+	//set free space array total is numberOfBlocks(19531 bits)
 	memset(freespace, 0, JCJC_VCB->numberOfBlocks);
 
 	// 0 --> vcb  1-5 --> bitmap
-	memset(freespace, 1, 6);
+	memset(freespace, 1, blockCount_VCB + JCJC_VCB->freeSpace_BlockCount);
+
 
 	// write 5 blocks starting from block 1 
 	int LBAwrite_return = LBAwrite(freespace, 5, 1);
+
+	JCJC_VCB->current_FreeBlockIndex;
 
 	if (LBAwrite_return != 5)
 	{
 		printf("LBAwrite failed!");
 	}
 
-
-
-	return 0;
-
+	// should current used block of the free space
+	// to the VCB init
+	return blockCount_VCB + JCJC_VCB->freeSpace_BlockCount;
 }
 
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
-	
+
 }
 
