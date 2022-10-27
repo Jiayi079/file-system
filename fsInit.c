@@ -23,7 +23,8 @@
 
 #include "fsLow.h"
 #include "mfs.h"
-#include "helperFunctions.c"
+// #include "helperFunctions.c"
+#include "helperFunctions.h"
 
 
 #define Magic_Number 123456
@@ -33,7 +34,6 @@
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
 //global variable
-int * freespace;
 int dir_DE_count = 50; //set 50 for now as an example
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);

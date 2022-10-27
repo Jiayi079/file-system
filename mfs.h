@@ -131,6 +131,8 @@ volume_ControlBlock * JCJC_VCB;
 fdDir * rootDir_ptr;
 fdDir * current_OpenedDir_ptr;
 uint64_t current_OpenedDir_index;
+int * freespace;
+
 
 
 

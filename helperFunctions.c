@@ -16,6 +16,9 @@
 
 #include "mfs.h"
 
+#include "fsLow.h"
+
+
 
 //Function to get the block count in the VCB
 unsigned int getVCB_BlockCount(uint64_t bl_number)
