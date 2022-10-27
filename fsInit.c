@@ -24,29 +24,21 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-<<<<<<< HEAD
-
-#define Magic_Number 123456
-=======
 #define Magic_Number 123456
 
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
+
 
 #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+
 //global variable
 int * freespace;
+int dir_DE_count = 50;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
-<<<<<<< HEAD
-int init_freeSpace();
-int init__RootDir();
-
-=======
 void exitFileSystem ();
 int init_freeSpace ();
 int init__RootDir ();
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -112,20 +104,12 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	init_VCB(numberOfBlocks, blockSize, blockCount_VCB);
 
 	//VCB status debugging 
-<<<<<<< HEAD
-	printf("*****VCB Status Overview*****");
-	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
-	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
-
-	
-	// LBAread
-	// LBAwrite(, 5, 0);
-=======
 	printf("*****VCB Status Overview*****\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 	printf("VCB has this block count: %ld\n", blockCount_VCB);
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
+
+	printf("dir_DE_count: %d\n", dir_DE_count);
 
 	init_freeSpace(JCJC_VCB, blockCount_VCB);
 	init__RootDir(JCJC_VCB);
@@ -217,25 +201,72 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
-	//malloc the fdDir
-	fdDir * dir = malloc(sizeof(fdDir));
+	//set our driectory entry (60 bytes) * 50 
+	int malloc_size = sizeof(Directory_Entry) * dir_DE_count;
 
-	if(open_dir == NULL){
-		printf("open dir failed!\n");
-		exit(-1);
+	int dir_number_of_block = malloc_size / JCJC_VCB->blockSize;
+
+	//if the malloc_size % the block from our vcb and > 0 than will add our dir_number_of_block
+	if(malloc_size % JCJC_VCB->blockSize > 0){
+		dir_number_of_block++;
 	}
 
+	// char dir_name[256]; 			//character variable to store file name
+	// unsigned int dir_Location;			 //integer variable to store file location
+	// size_t size;				 //variable for file size
+	// unsigned directory_entry;
 
-	memset(dir, 0, sizeof(fdDir));
+	//init the directory entry struct
+	Directory_Entry * de = malloc(dir_number_of_block * JCJC_VCB->blockSize);
 
-	int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
-    if (dirBlockCount % JCJC_VCB->blockSize > 0)
-    {
-        dirBlockCount++;
-    }
+	// int dir_start_location = 
 
-	printf("dirBlockCount: %d\n", dirBlockCount);
+	strcpy(de[0].dir_name, ".");
+
+	de[0].dir_Location;
+
+
+	// if(dir == NULL){
+	// 	printf("open dir failed!\n");
+	// 	exit(-1);
+	// }
+
+
+	// memset(dir, 0, sizeof(fdDir));
+
+	// int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
+    // if (dirBlockCount % JCJC_VCB->blockSize > 0)
+    // {
+    //     dirBlockCount++;
+    // }
+
+	// printf("dirBlockCount: %d\n", dirBlockCount);
+
 	
+
 	return 0;
 	
 }
+
+
+int allocateFreeSpace (volume_ControlBlock * JCJC_VCB, int NumberOfBlock){
+
+
+	if(NumberOfBlock > JCJC_VCB->freeSpace_BlockCount){
+		printf("need more block! It will need %d block.\n", 
+				numberOfBlocks - JCJC_VCB->freeSpace_BlockCount);
+		exit(-1);
+
+	}
+	
+	//init all other freespace value
+	for(int i=1; i<JCJC_VCB->numberOfBlocks; i++){
+
+	}
+
+}
+
+int get_num_blocks(int bytes, int block_size)
+    {
+    return (bytes + block_size - 1)/(block_size);
+    }
