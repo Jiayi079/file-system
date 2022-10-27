@@ -210,8 +210,6 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		//Since 1 byte consists of 8 bits, we need to find
 		//the number of bytes used for each block in the VCB
 		//then we can get the number of blocks needed for the initialized VCB
-
-
 		u_int64_t bytes_PerBlock = numberOfBlocks / 8;
 		if(numberOfBlocks % 8 > 0){
 
@@ -281,7 +279,13 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	//Set our root directory location to 0
 	memset(root_Dir, 0, sizeof(fdDir));
-	
+
+	//Setting each directory enrtries to 0 -> free 
+	for(int i = 0; i < 51; i++){
+
+		memset(root_Dir, 0, sizeof(fdDir));
+	}
+
 
 	//Set the root directory as the initial directory location 
 	rootDir_ptr = root_Dir;
