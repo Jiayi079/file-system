@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "b_io.h"
+#include "fsLow.h"
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
@@ -116,16 +117,21 @@ typedef struct VCB{
 
 	// int * free_block_ptr;				//the pointer to track our free space
 	unsigned int free_block_count;		//the total numbers of the free blocks
+	uint64_t location_RootDirectory;	//integer variable to hold root directory location in VCB
 
 }volume_ControlBlock;
 
 
 //VCB related functions
-int update_VCB();
 unsigned int getVCB_BlockCount(uint64_t);
 
-//Global variables for VCB 
+
+//Global variables for VCB, FreeSpace, and Directory
 volume_ControlBlock * JCJC_VCB;
+fdDir * rootDir_ptr;
+fdDir * current_OpenedDir_ptr;
+uint64_t current_OpenedDir_index;
+
 
 
 typedef struct Directory_Entry{
