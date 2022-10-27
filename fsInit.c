@@ -31,13 +31,16 @@
 
 // #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+
 //global variable
 int * freespace;
+int dir_DE_count = 50; //set 50 for now as an example
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 void exitFileSystem ();
 int init_freeSpace ();
 int init__RootDir ();
+int allocateFreeSpace (volume_ControlBlock * JCJC_VCB, int NumberOfBlock);
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -157,15 +160,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 	}
 
-	
-	init_VCB(numberOfBlocks, blockSize, blockCount_VCB);
 
-	//VCB status debugging 
-	printf("*****VCB Status Overview*****\n");
-	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
-	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
-
-	
+	//VCB status debugging 	
 	// LBAread
 	// LBAwrite(, 5, 0);
 	printf("*****VCB Status Overview*****\n");
@@ -173,8 +169,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 	printf("VCB has this block count: %ld\n", blockCount_VCB);
 
-	init_freeSpace(JCJC_VCB, blockCount_VCB);
-	init__RootDir(JCJC_VCB);
+	printf("dir_DE_count: %d\n", dir_DE_count);
+
 
 	//Set opened directory pointer to NULL
 	//and reset openedDir index to 0
@@ -186,49 +182,48 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 
 void exitFileSystem ()
-	{
+{
 	printf ("System exiting\n");
-	}
+}
 
 //Initializing the VCB
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB)
-	{
+{
 
-		//Using memset(), initialize a block of memory for our VCB, with value 0
-		//based on the size of our VCB
-		memset(JCJC_VCB, 0, sizeof(volume_ControlBlock));
+	//Using memset(), initialize a block of memory for our VCB, with value 0
+	//based on the size of our VCB
+	memset(JCJC_VCB, 0, sizeof(volume_ControlBlock));
 
-		//Initialize our VCB with these deault values 
-		JCJC_VCB -> numberOfBlocks = numberOfBlocks;
-		JCJC_VCB -> blockSize = blockSize;
-		JCJC_VCB -> VCB_blockCount = blockCount_VCB; //Amount of blocks used by the VCB
-		JCJC_VCB -> current_FreeBlockIndex = 0;
-		JCJC_VCB -> magicNumber = Magic_Number;
+	//Initialize our VCB with these deault values 
+	JCJC_VCB -> numberOfBlocks = numberOfBlocks;
+	JCJC_VCB -> blockSize = blockSize;
+	JCJC_VCB -> VCB_blockCount = blockCount_VCB; //Amount of blocks used by the VCB
+	JCJC_VCB -> current_FreeBlockIndex = 0;
+	JCJC_VCB -> magicNumber = Magic_Number;
 
-		//Since 1 byte consists of 8 bits, we need to find
-		//the number of bytes used for each block in the VCB
-		//then we can get the number of blocks needed for the initialized VCB
-		u_int64_t bytes_PerBlock = numberOfBlocks / 8;
-		if(numberOfBlocks % 8 > 0){
+	//Since 1 byte consists of 8 bits, we need to find
+	//the number of bytes used for each block in the VCB
+	//then we can get the number of blocks needed for the initialized VCB
+	u_int64_t bytes_PerBlock = numberOfBlocks / 8;
+	if(numberOfBlocks % 8 > 0){
 
-			bytes_PerBlock++;
-
-		}
-
-		JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
-
-
-		return 0;
+		bytes_PerBlock++;
 
 	}
 
+	JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
+
+
+	return 0;
+
+}
+
 
 //init freespace
-// *****? should we add blockCount_VCB to struct
 int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 	//init the bitmap array -> 5 blocks
-	freespace = malloc(5*JCJC_VCB->numberOfBlocks);
+	freespace = malloc(5*JCJC_VCB->blockSize);
 
 	if(freespace == NULL){
 		printf("freespace malloc failed\n");
@@ -251,7 +246,7 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 	// write 5 blocks starting from block 1 
 	int LBAwrite_return = LBAwrite(freespace, 5, 1);
 
-	JCJC_VCB->current_FreeBlockIndex;
+	JCJC_VCB->current_FreeBlockIndex += blockCount_VCB + JCJC_VCB->freeSpace_BlockCount;
 
 	if (LBAwrite_return != 5)
 	{
@@ -269,49 +264,95 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
-	//malloc our root_Dir
-	fdDir * root_Dir = malloc(sizeof(fdDir));
+	// int dir_block_count = getVCB_BlockCount(sizeof(Directory_Entry) * dir_DE_count);
+	// int dir_num_bytes = getVCB_num_bytes(dir_block_count);
+	
+	// Directory_Entry * de = malloc(dir_num_bytes);
 
-	if(root_Dir == NULL){
+	// strcpy(de[0].dir_name, ".");
+	// de[0].dir_Location = allocateFreeSpace(dir_num_bytes);
+	// de[0].size = dir_num_bytes;
 
-<<<<<<< HEAD
-	// if(open_dir == NULL){
+	// if (de[0].dir_Location == -1)
+	// {
+	// 	printf("allocation of directory location failed\n");
+	// 	free(de);
+	// 	de = NULL;
+	// 	exit(-1);
+	// }
+
+
+
+
+
+
+
+	// //malloc our root_Dir
+	// fdDir * root_Dir = malloc(sizeof(fdDir));
+
+	// if(root_Dir == NULL){
+
+	// // if(open_dir == NULL){
+	// // 	printf("open dir failed!\n");
+	// // 	exit(-1);
+	// // }
+	// 	printf("root_dir failed to initialize!\n");
+	// 	return -1;
+	// }
+
+	// //Set our root directory location to 0
+	// memset(root_Dir, 0, sizeof(fdDir));
+
+	// //Setting each directory enrtries to 0 -> free 
+	// for(int i = 0; i < 51; i++){
+
+	// 	memset(root_Dir, 0, sizeof(fdDir));
+	// }
+
+
+	// char dir_name[256]; 			//character variable to store file name
+	// unsigned int dir_Location;			 //integer variable to store file location
+	// size_t size;				 //variable for file size
+	// unsigned directory_entry;
+
+
+	// //init the directory entry struct
+	// Directory_Entry * de = malloc(dir_block_count * JCJC_VCB->blockSize);
+
+
+	// // int dir_start_location = 
+
+	// strcpy(de[0].dir_name, ".");
+
+	// de[0].dir_Location;
+
+
+	// if(dir == NULL){
 	// 	printf("open dir failed!\n");
 	// 	exit(-1);
 	// }
-=======
-		printf("root_dir failed to initialize!\n");
-		return -1;
-	}
-
-	//Set our root directory location to 0
-	memset(root_Dir, 0, sizeof(fdDir));
-
-	//Setting each directory enrtries to 0 -> free 
-	for(int i = 0; i < 51; i++){
-
-		memset(root_Dir, 0, sizeof(fdDir));
-	}
->>>>>>> e43e51398d8dd33ecbe0f98f10c14a5e55556bae
-
-	int dir_blick_count = sizeof(FT_DIRECTORY)
 
 	//Set the root directory as the initial directory location 
-	rootDir_ptr = root_Dir;
-	JCJC_VCB -> location_RootDirectory = rootDir_ptr -> directoryStartLocation;
+	// rootDir_ptr = root_Dir;
+	// JCJC_VCB -> location_RootDirectory = rootDir_ptr -> directoryStartLocation;
 
 
 
-	int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
-    if (dirBlockCount % JCJC_VCB->blockSize > 0)
-    {
-        dirBlockCount++;
-    }
+	// memset(dir, 0, sizeof(fdDir));
+
+	// int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
+    // if (dirBlockCount % JCJC_VCB->blockSize > 0)
+    // {
+    //     dirBlockCount++;
+    // }
+
+	// printf("dirBlockCount: %d\n", dirBlockCount);
 
 
 
-	printf("dirBlockCount: %d\n", dirBlockCount);
+	// printf("dirBlockCount: %d\n", dirBlockCount);
 	
+
 	return 0;
 	
 }
