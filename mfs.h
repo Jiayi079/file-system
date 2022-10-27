@@ -57,6 +57,11 @@ typedef struct
 	unsigned short  d_reclen;		/*length of this record */
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
+	unsigned directory_entry; 		// there is 60 bytes directory entry
+
+	// unsigned int create_date; 			//variable for file create date
+	// unsigned int last_access_date; 			//variable for when you access/modify the file’s date
+	// char  comment [300]; 			// comment for the file
 	} fdDir;
 
 // Key directory functions
@@ -99,7 +104,7 @@ typedef struct VCB{
 	uint64_t rootLocation;				//integer variable for root directory location (256 bytes)
 
 	unsigned int VCB_blockCount; 		//integer variable for starting position of free block space VCB (2560 bytes)
-	unsigned int freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
+	uint64_t freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
 	uint64_t current_FreeBlockIndex;	//integer index variable for current free blocks in VCB
 	
 	uint64_t magicNumber;				//integer variable for magic number, useful when opening files based on their 
@@ -114,9 +119,28 @@ typedef struct VCB{
 
 //VCB related functions
 int update_VCB();
+unsigned int getVCB_BlockCount(uint64_t);
 
 //Global variables for VCB 
 volume_ControlBlock * JCJC_VCB;
+
+
+// typedef struct Directory{
+
+// 	char dir_name[256]; 			//character variable to store file name
+// 	unsigned int dir_Location;			 //integer variable to store file location
+// 	size_t size;				 //variable for file size
+// 	unsigned directory_entry = 60; // there is 60 bytes directory entry
+
+// 	// unsigned int create_date; 			//variable for file create date
+// 	// unsigned int last_access_date; 			//variable for when you access/modify the file’s date
+// 	// char  comment [300]; 			// comment for the file
+
+// }Directory;
+
+
+
+
 
 
 #endif

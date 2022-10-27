@@ -24,14 +24,18 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-#define Magic_Number 123 
 
+#define Magic_Number 123456
+
+#define Magic_Number 123
+// int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 //global variable
 int * freespace;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 int init_freeSpace();
 int init__RootDir();
+
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -47,31 +51,69 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		blockCount_VCB++;
 	}
 
+	//Malloc a block of memory for our VCB pointer and set LBAread block 0
+	//Basically, init a VCB buffer and read/start from block 0 of VCB
+	char * vcb_Buffer = malloc(blockCount_VCB * blockSize);
+	if(vcb_Buffer == NULL){
+
+		printf("Failed to allocate the buffer for VCB");
+		return -1;
+	}
+
+	LBAread(vcb_Buffer, blockCount_VCB, 0);
+
+	//Malloc a block of space for the VCB so that 
+	//we can copy whatever is in the buffer into our VCB
+	JCJC_VCB = malloc(sizeof(volume_ControlBlock));
+	if(JCJC_VCB == NULL){
+
+		printf("Failed to allocate space in VCB");
+		return -1;
+	}
+
+	memcpy(JCJC_VCB, vcb_Buffer, sizeof(volume_ControlBlock));
+
+	//Free our VCB buffer and set equal to NULL
+	free(vcb_Buffer);
+	vcb_Buffer == NULL;
 
 	//Check if volume is formated & initialized by cross-matching
 	//the Magic Number we previously defined. If not, then init
 	if (Magic_Number == JCJC_VCB -> magicNumber){
 
+		//Malloc our VCB buffer to read the amount of freespace 
+		//from the volume to the VCB buffer
+		vcb_Buffer = malloc(JCJC_VCB -> freeSpace_BlockCount * JCJC_VCB -> blockSize);
+		if(vcb_Buffer == NULL){
+
+			printf("failed to malloc vcb_Buffer");
+			return -1;
+		}
+
+		LBAread(vcb_Buffer, JCJC_VCB -> freeSpace_BlockCount, JCJC_VCB -> VCB_blockCount);
+
 
 	} else {
 
+		
 
 	}
 
 
 	//VCB status debugging 
 	printf("*****VCB Status Overview*****");
-	printf("VCB has this number of blocks: %ld", JCJC_VCB -> numberOfBlocks);
-	printf("VCB has this block size: %ld", JCJC_VCB -> blockSize);
+	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
+	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 
 	
-	LBAread
-	LBAwrite(, 5, 0);
+	// LBAread
+	// LBAwrite(, 5, 0);
 
 
 	return 0;
+}
 
-	}
+
 	
 	
 void exitFileSystem ()
@@ -90,10 +132,23 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 		//Initialize our VCB with these deault values 
 		JCJC_VCB -> numberOfBlocks = numberOfBlocks;
 		JCJC_VCB -> blockSize = blockSize;
-		JCJC_VCB -> VCB_blockCount = blockCount_VCB;
+		JCJC_VCB -> VCB_blockCount = blockCount_VCB; //Amount of blocks used by the VCB
 		JCJC_VCB -> current_FreeBlockIndex = 0;
 		JCJC_VCB -> magicNumber = Magic_Number;
 
+		//Since 1 byte consists of 8 bits, we need to find
+		//the number of bytes used for each block in the VCB
+		//then we can get the number of blocks needed for the initialized VCB
+
+
+		// u_int64_t bytes_PerBlock = numberOfBlocks / 8;
+		// if(numberOfBlocks % 8 > 0){
+
+		// 	bytes_PerBlock++;
+
+		// }
+
+		// JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
 
 
 		return 0;
@@ -105,7 +160,7 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 
 	//init the bitmap array
-	freespace = malloc(5*numberOfBlocks);
+	freespace = malloc(5*JCJC_VCB->numberOfBlocks);
 	
 	// printf("freespace: %ls", freespace);
 
@@ -119,16 +174,41 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 	memset(freespace, 0, JCJC_VCB->numberOfBlocks);
 
 	// 0 --> vcb  1-5 --> bitmap
+	//the first 6 bits will be marked as use
 	memset(freespace, 1, 6);
 
 	// write 5 blocks starting from block 1 
-	LBAwrite(freespace, 5, 1);
+	int LBAwrite_return = LBAwrite(freespace, 5, 1);
+
+	if (LBAwrite_return != 5)
+	{
+		printf("LBAwrite failed!");
+	}
 
 	return 0;
 
 }
 
 
-// int init__RootDir(){
+int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
-// }
+	//malloc the fdDir
+	fdDir * dir = malloc(sizeof(fdDir));
+
+	if(open_dir == NULL){
+		printf("open dir failed!\n");
+		exit(-1);
+	}
+
+
+	memset(dir, 0, sizeof(fdDir));
+
+	int dirBlockCount = sizeof(fdDir) / JCJC_VCB->blockSize;
+    if (dirBlockCount % JCJC_VCB->blockSize > 0)
+    {
+        dirBlockCount++;
+    }
+
+	return 0;
+	
+}
