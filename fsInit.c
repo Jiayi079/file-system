@@ -24,29 +24,18 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-<<<<<<< HEAD
 
 #define Magic_Number 123456
-=======
-#define Magic_Number 123456
 
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
-
-#define Magic_Number 123
+// #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 //global variable
 int * freespace;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
-<<<<<<< HEAD
-int init_freeSpace();
-int init__RootDir();
-
-=======
 void exitFileSystem ();
 int init_freeSpace ();
 int init__RootDir ();
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -109,10 +98,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		
 
 	}
+
+	
 	init_VCB(numberOfBlocks, blockSize, blockCount_VCB);
 
 	//VCB status debugging 
-<<<<<<< HEAD
 	printf("*****VCB Status Overview*****");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
@@ -120,12 +110,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	
 	// LBAread
 	// LBAwrite(, 5, 0);
-=======
-	printf("*****VCB Status Overview*****\n");
-	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
-	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
-	printf("VCB has this block count: %ld\n", blockCount_VCB);
->>>>>>> 1c6aff1de90d8fd5933927f8a74917d1ead1bbc8
 
 	init_freeSpace(JCJC_VCB, blockCount_VCB);
 	init__RootDir(JCJC_VCB);
@@ -209,6 +193,9 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 		printf("LBAwrite failed!");
 	}
 
+	free(freespace);
+	freespace = NULL;
+
 	// should current used block of the free space
 	// to the VCB init
 	return blockCount_VCB + JCJC_VCB->freeSpace_BlockCount;
@@ -220,11 +207,12 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 	//malloc the fdDir
 	fdDir * dir = malloc(sizeof(fdDir));
 
-	if(open_dir == NULL){
-		printf("open dir failed!\n");
-		exit(-1);
-	}
+	// if(open_dir == NULL){
+	// 	printf("open dir failed!\n");
+	// 	exit(-1);
+	// }
 
+	int dir_blick_count = sizeof(FT_DIRECTORY)
 
 	memset(dir, 0, sizeof(fdDir));
 
