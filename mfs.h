@@ -108,8 +108,9 @@ typedef struct VCB{
 	uint64_t rootLocation;				//integer variable for root directory location (256 bytes)
 
 	unsigned int VCB_blockCount; 		//integer variable for starting position of free block space VCB (2560 bytes)
-	uint64_t freeSpace_BlockCount; 	//integer variable for block count of free space in VCB
-	uint64_t current_FreeBlockIndex;	//integer index variable for current free blocks in VCB
+	uint64_t freeSpace_BlockCount; 		//integer variable for block count of free space in VCB
+	uint64_t current_FreeBlockIndex;	//integer index variable for current free space starting position in VCB
+	uint64_t first_freespace;
 	
 	uint64_t magicNumber;				//integer variable for magic number, useful when opening files based on their 
 										//file Signature, and also for hex dumps 
@@ -136,8 +137,8 @@ int * freespace;
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 void exitFileSystem ();
-int init_freeSpace ();
-int init__RootDir ();
+int init_freeSpace (volume_ControlBlock * JCJC_VCB);
+int init__RootDir (volume_ControlBlock * JCJC_VCB);
 
 
 
@@ -154,9 +155,6 @@ typedef struct Directory_Entry{
 	// char  comment [300]; 			// comment for the file
 
 }Directory_Entry;
-
-
-
 
 
 

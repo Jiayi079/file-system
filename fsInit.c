@@ -50,6 +50,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		blockCount_VCB++;
 	}
 
+	// printf("[debug]blockCount_VCB: %d\n",blockCount_VCB);
+
 	//Malloc a block of memory for our VCB pointer and set LBAread block 0
 	//Basically, init a VCB buffer and read/start from block 0 of VCB
 	char * vcb_Buffer = malloc(blockCount_VCB * blockSize);
@@ -59,11 +61,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		return -1;
 	}
 
+	// printf("[debug]size of vcb_Buffer: %s\n", vcb_Buffer);
+
 	LBAread(vcb_Buffer, blockCount_VCB, 0);
 
 	//Malloc a block of space for the VCB so that 
 	//we can copy whatever is in the buffer into our VCB
 	JCJC_VCB = malloc(sizeof(volume_ControlBlock));
+	// JCJC_VCB = malloc(blockSize);
+	// LBAread(JCJC_VCB, 1, 0); // VCB starting block -> 0
 	if(JCJC_VCB == NULL){
 
 		printf("Failed to allocate space in VCB\n");
@@ -129,6 +135,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		free(vcb_Buffer);
 		vcb_Buffer = NULL;
 
+		// ----------------------------
+		// free(rootDir_ptr);
+		// rootDir_ptr = NULL;
+
+
 	} else {
 
 		//If all values are not at defualt 0, then volume is not formatted 
@@ -138,10 +149,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 			printf("VCB has not been formated and initialized\n");
 			return -1;
 		}
-
-		if (init_freeSpace(JCJC_VCB, JCJC_VCB -> VCB_blockCount) != 0)
+		LBAwrite(vcb_Buffer, 1, 0);
+		init_freeSpace(JCJC_VCB);
+		if (init_freeSpace(JCJC_VCB) != 6)
 		{
-
 			printf("Freespace has not been formated and initialized\n");
 			return -1;
 		}
@@ -161,15 +172,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("*****VCB Status Overview*****\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
-	printf("VCB has this block count: %ld\n", blockCount_VCB);
+	printf("VCB has this block count: %d\n", JCJC_VCB->VCB_blockCount);
 
-	printf("dir_DE_count: %d\n", dir_DE_count);
+	// printf("dir_DE_count: %d\n", dir_DE_count);
 
 
 	//Set opened directory pointer to NULL
 	//and reset openedDir index to 0
-	current_OpenedDir_ptr = NULL;
-	current_OpenedDir_index = 0;
+	// current_OpenedDir_ptr = NULL;
+	// current_OpenedDir_index = 0;
 
 	return 0;
 }
@@ -194,6 +205,7 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 	JCJC_VCB -> VCB_blockCount = blockCount_VCB; //Amount of blocks used by the VCB
 	JCJC_VCB -> current_FreeBlockIndex = 0;
 	JCJC_VCB -> magicNumber = Magic_Number;
+	JCJC_VCB -> first_freespace = 1;
 
 	//Since 1 byte consists of 8 bits, we need to find
 	//the number of bytes used for each block in the VCB
@@ -206,6 +218,7 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 	}
 
 	JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
+	// printf("freespace_blockcount: %ld\n", JCJC_VCB->freeSpace_BlockCount);
 
 
 	return 0;
@@ -214,15 +227,29 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 
 
 //init freespace
-int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
+int init_freeSpace(volume_ControlBlock * JCJC_VCB){
+
+	uint64_t bits_in_block = 8 * JCJC_VCB->blockSize;
+	uint64_t block_count = JCJC_VCB->numberOfBlocks / bits_in_block;
+	if (JCJC_VCB->numberOfBlocks % bits_in_block != 0)
+	{
+		block_count++;
+	}
+
+	// printf("block_count: %d\n", block_count);
+
+	JCJC_VCB->freeSpace_BlockCount = block_count;
 
 	//init the bitmap array -> 5 blocks
-	freespace = malloc(5 * JCJC_VCB -> blockSize);
+	freespace = malloc(block_count * JCJC_VCB->blockSize);
+
+	// JCJC_VCB->current_FreeBlockIndex = 0;
 
 	if(freespace == NULL){
 		printf("freespace malloc failed\n");
 		exit (-1);
 	}
+	// -----------------------------------------------------------------------
 
 	// printf("numberofblock: %d\n", JCJC_VCB->numberOfBlocks);
 	// printf("freespace size: %d\n", sizeof(freespace));
@@ -231,28 +258,55 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB, __u_int blockCount_VCB){
 
 	//0 -> free, 1 -> allocated
 	//Set the free space array total as the numberOfBlocks(19531 bits)
-	memset(freespace, 0, JCJC_VCB -> numberOfBlocks);
+	// memset(freespace, 0, JCJC_VCB -> numberOfBlocks);
 
 	// 0 --> vcb  1-5 --> bitmap
-	memset(freespace, 1, blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount);
+	// memset(freespace, 1, JCJC_VCB->VCB_blockCount + JCJC_VCB -> freeSpace_BlockCount);
+		// comment part
+	// --------------------------------------------------------------------
 
+
+
+	// [ 0 ][ 1 ][ 2 ][ 3 ][ 4 ][ 5 ][ 6 ]
+	// [VCB][FRE][FRE][FRE][FRE][FRE][   ]
+	// JCJC_VCB->numberOfBlocks / JCJC_VCB->blockSize;
+
+	JCJC_VCB->current_FreeBlockIndex += JCJC_VCB->VCB_blockCount + JCJC_VCB -> freeSpace_BlockCount;
+
+	// memset(freespace, 0, block_count * JCJC_VCB->blockSize * 8);
+	// memset(freespace, 1, JCJC_VCB->first_freespace + block_count);
+
+	for (int i = 0; i < JCJC_VCB->first_freespace + block_count; i++)
+	{
+		setBitUsed(i, freespace);
+	}
+
+
+
+	for (int i = JCJC_VCB->first_freespace + block_count; i < block_count * JCJC_VCB->blockSize; i++)
+	{
+		setBitFree(i, freespace);
+	}
+
+	// printf("[debug]initial freespace\n");
 
 	//Write 5 blocks starting from block 1 
-	int LBAwrite_return = LBAwrite(freespace, 5, 1);
+	int LBAwrite_return = LBAwrite(freespace, block_count, 1);
 
-	JCJC_VCB->current_FreeBlockIndex += blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount;
 
-	if (LBAwrite_return != 5)
+	if (LBAwrite_return != block_count)
 	{
 		printf("LBAwrite failed!\n");
 	}
 
-	free(freespace);
-	freespace = NULL;
+	// printf("[debug]current_freeblockIndex: %ld\n", JCJC_VCB->current_FreeBlockIndex);
 
-	//Set current block as" used" in the free space
-	//and update it to the VCB 
-	return blockCount_VCB + JCJC_VCB -> freeSpace_BlockCount;
+	// free(freespace);
+	// freespace = NULL;
+
+	// Set current block as" used" in the free space
+	// and update it to the VCB 
+	return JCJC_VCB->first_freespace + block_count;
 }
 
 
@@ -269,6 +323,7 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	//Set the first dir name as "."
     strcpy(de[0].dir_name, ".");
+	strcpy(de[1].dir_name, "..");
 
 	//Use alllocateFreeSpace function to determine the free space we can use in the directory
     de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);
@@ -352,6 +407,7 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	// printf("dirBlockCount: %d\n", dirBlockCount);
 	
+
 
 	return 0;
 	
