@@ -327,7 +327,7 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	//Use alllocateFreeSpace function to determine the free space we can use in the directory
     de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);
-    de[0].size = dir_num_bytes;
+    de[0].fileSize = dir_num_bytes;
 
 	//Check if our first directory location exists, throw error if it doesn't exsist
     if (de[0].dir_Location == -1)
