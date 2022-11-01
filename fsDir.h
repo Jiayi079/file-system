@@ -35,3 +35,18 @@ int getDirIndex(Directory_Entry * Dir, char *path){
     //return the index value from our for loop
      return i;
 }
+
+
+int getNotInUseDir(){
+    int  i = -1;
+    while(i < 10){
+        if(directories[i].dirUsed == 0){
+            //if we find the unuse dir, if will return the index value
+            return i;
+        }
+        i++;
+    }
+
+    //if not find will reutn -1
+    return -1;
+}
