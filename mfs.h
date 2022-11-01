@@ -151,6 +151,7 @@ typedef struct Directory_Entry{
 	unsigned int dir_Location;			 //integer variable to store file location
 	size_t size;					 //variable for file size
 	char filePath[256];				 //file path
+	char dirUsed;					//to check if any Dir is in use, 0 is free, 1 is using
 	// unsigned directory_entry; 		// there is 60 bytes directory entry
 
 	// unsigned int create_date; 			//variable for file create date
