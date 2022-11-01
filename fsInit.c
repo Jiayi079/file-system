@@ -322,8 +322,8 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
     Directory_Entry * de = malloc(dir_num_bytes);
 
 	//Set the first dir name as "."
-    strcpy(de[0].dir_name, ".");
-	strcpy(de[1].dir_name, "..");
+    strcpy(de[0].file_name, ".");
+	strcpy(de[1].file_name, "..");
 
 	//Use alllocateFreeSpace function to determine the free space we can use in the directory
     de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);

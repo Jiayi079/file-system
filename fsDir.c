@@ -23,6 +23,7 @@
 #include "mfs.h"
 #include "fsLow.h"
 #include "fsDir.h"
+#include "bitmap.c"
 
 char cwd[512];
 
@@ -61,28 +62,67 @@ int fs_mkdir(const char *pathname, mode_t mode)
     if (current_dirIndex != -1)
     {
         printf("[fsDir.c --- fs_mkdir()] Directory already exists\n");
-        exit(-1);
+        return 0;
     }
+
+
+
 
     int parent_dirIndex = -1; // set become -1 to find the parent dir index in directories array
     Directory_Entry * parent;
-    for (int i = 0; i < 20; i++)
+    // loop to find the previous directory's location
+    int i = 0;
+    while (i < 20)
     {
-        parent_dirIndex = (Directory_Entry *); // havent finished
-        if (strcmp(parent->filePath, cwd))
-    }
-
-    int finish = 0;
-    Directory_Entry * child;
-
-    for (int i = 2; i < 8; i++)
-    {
-        child = (Directory_Entry *); // haven't finished
-        if (strlen(child->filePath) == 0)
+        parent = (Directory_Entry *)directories[i].dirEntry[0];
+        if (strcmp(parent->filePath, cwd) == 0) // successfully find path
         {
-            
+            parent_dirIndex = i;
+            break;
         }
+        i++;
     }
+
+    if (parent_dirIndex == -1)
+    {
+        printf("[fsDir.c --- fs_mkdir()] Doesn't have parent path\n");
+        exit(-1);
+    }
+
+
+
+
+
+    int finish_setting = 0;
+    Directory_Entry * child;
+    // make file directory to struct
+    int j = 2; // child's directory entre start searching location
+    while (j < 8)
+    {
+        child = (Directory_Entry *)directories[parent_dirIndex].dirEntries[j];
+        if (strlen(child->filePath) == 0) // empty, can store into it
+        {
+            strcpy(child->file_name, pathname);
+            strcpy(child->filePath, absolutePath);
+            child->fileSize = sizeof(fdDir);
+            child->fileType = 0;
+            // haven't initialized dir_location
+            // haven't initialized time yet
+            memcpy(directories[parent_dirIndex].dirEntry[j], (char *)child, 512);
+            finish_setting = 1;
+            break;
+        }
+        j++;
+    }
+
+    if (finish_setting != 1)
+    {
+        printf("[fsDir.c --- fs_mkdir()] Doesn't have enough space for child\n");
+        exit(-1);
+    }
+
+    
+
 
     return 0;
 }
