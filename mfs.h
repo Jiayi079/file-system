@@ -63,6 +63,9 @@ typedef struct
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
 	uint64_t blockIndex;
 	char dirEntry[10][512]; 		//dirEntry have 10 arrays with each array have length 512
+	char d_name[128];
+	int isUsed;									// 0 -> free, 1 -> used
+	int fileType;								// 0 -> dir, 1 -> file
 
 	// unsigned int create_date; 			//variable for file create date
 	// unsigned int last_access_date; 			//variable for when you access/modify the file’s date
@@ -153,7 +156,7 @@ typedef struct Directory_Entry{
 	
 	size_t fileSize;					 //variable for file size
 	char filePath[256];				 //file path
-	char dirUsed;					//to check if any Dir is in use, 0 is free, 1 is using
+	int dirUsed;					//to check if any Dir is in use, 0 is free, 1 is using
 	// unsigned directory_entry; 		// there is 60 bytes directory entry
 
 	// time_t create_date; 			//variable for file create date

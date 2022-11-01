@@ -24,6 +24,7 @@
 #include "fsLow.h"
 #include "fsDir.h"
 #include "bitmap.c"
+#include "fsInit.c"
 
 char cwd[512];
 
@@ -121,10 +122,53 @@ int fs_mkdir(const char *pathname, mode_t mode)
         exit(-1);
     }
 
-    
 
 
-    return 0;
+    // find empty directory location
+    int empty_dir_location = getNotInUseDir();
+
+    if (empty_dir_location == -1)
+    {
+        printf("[fsDir.c --- fs_mk] Doesn't have empty directory\n");
+        return -1;
+    }
+
+    strcpy(directories[empty_dir_location].d_name, pathname);
+    directories[empty_dir_location].isUsed = 1;
+    directories[empty_dir_location].fileType = 0;
+
+    Directory_Entry * current_DE;
+    current_DE = malloc(sizeof(Directory_Entry);
+
+    strcpy(current_DE->file_name, '.');
+    // dir_location doesn't finish setting
+    current_DE->fileType = 0;
+    current_DE->fileSize = sizeof(fdDir);
+    strcpy(current_DE->filePath, absolutePath);
+    current_DE->dirUsed = 1;
+
+    Directory_Entry * parent_DE;
+    parent_DE = malloc(sizeof(Directory_Entry));
+    strcpy(parent_DE->file_name, '..');
+    parent_DE->fileType = 0;
+    parent_DE->fileSize = sizeof(fdDir);
+    strcpy(parent_DE->filePath, parent->filePath);
+    parent_DE->dirUsed = 1;
+
+    memcpy(directories[empty_dir_location].dirEntry[0], (char *)current_DE, 512);
+    memcpy(directories[empty_dir_location].dirEntry[1], (char *)parent_DE, 512);
+
+    int blockCount = (dir_DE_count * sizeof(Directory_Entry)) / 512 + 1;
+    // TODO
+    // LBAwrite((char *)directories, blockCount, ); // last paremeter for directories location, doesn't finish
+
+
+    free(current_DE);
+    current_DE = NULL;
+    free(parent_DE);
+    parent_DE = NULL;
+
+    return 1;
 }
 
 int fs_rmdir(const char *pathname)
