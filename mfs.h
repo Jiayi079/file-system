@@ -62,6 +62,7 @@ typedef struct
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
 	uint64_t blockIndex;
+	char dirEntry[10][512]; 		//dirEntry have 10 arrays with each array have length 512
 
 	// unsigned int create_date; 			//variable for file create date
 	// unsigned int last_access_date; 			//variable for when you access/modify the file’s date
@@ -133,6 +134,7 @@ fdDir * rootDir_ptr;
 fdDir * current_OpenedDir_ptr;
 uint64_t current_OpenedDir_index;
 int * freespace;
+fdDir * directories;
 
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
@@ -147,7 +149,8 @@ typedef struct Directory_Entry{
 
 	char dir_name[256]; 			//character variable to store file name
 	unsigned int dir_Location;			 //integer variable to store file location
-	size_t size;				 //variable for file size
+	size_t size;					 //variable for file size
+	char filePath[256];				 //file path
 	// unsigned directory_entry; 		// there is 60 bytes directory entry
 
 	// unsigned int create_date; 			//variable for file create date
