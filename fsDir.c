@@ -132,7 +132,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
 
     if (empty_dir_location == -1)
     {
-        printf("[fsDir.c --- fs_mk] Doesn't have empty directory\n");
+        printf("[fsDir.c --- fs_mkdir()] Doesn't have empty directory\n");
         return -1;
     }
 
@@ -174,9 +174,50 @@ int fs_mkdir(const char *pathname, mode_t mode)
     return 1;
 }
 
+// return the exactly directory we find
+// return NULL if not found anything
+fdDir * fs_opendir(const char *name)
+{
+    if (name == NULL)
+    {
+        printf("[fsDir.c --- fs_opendir()] name is NULL\n");
+        return NULL;
+    }
+
+    Directory_Entry * de;
+
+    // may set up the condition number later just set 21 for now
+    for (int i = 0; i < 21; i++)
+    {
+        de = (Directory_Entry*)directories[i].dirEntry[0];
+        if (strcmp(de->file_name, name) == 0) // find the name in the directory
+        {
+            return &directories[i]; // return the exactly directory we found
+        }
+    }
+
+    // TODO: if not found anything, this code will not print error message
+
+    return NULL; // return NULL if not found anything
+}
+
+
+
+// TODO: finish later
 int fs_rmdir(const char *pathname)
 {
+    if (strcmp(pathname, ".") == 0 || strcmp(pathname, "..") == 0 || strcmp(pathname,"/"))
+    {
+        printf("[fsDir.c --- fs_rmdir] Can not remove directory: %s\n", pathname);
+        return -1;
+    }
 
+    char absolutePath[256];
+
+    if (strlen(pathname) > 0)
+    {
+
+    }
     return 0;
 }
 
