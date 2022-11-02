@@ -40,6 +40,10 @@ typedef u_int32_t uint32_t;
 
 #define MAX_DE 50
 
+//Variables if isFile or isDirectory
+#define type_isDirectory 0
+#define type_isFile 1
+
 
 // This structure is returned by fs_readdir to provide the caller with information
 // about each file as it iterates through a directory
@@ -48,6 +52,8 @@ struct fs_diriteminfo
     unsigned short d_reclen;    /* length of this record */
     unsigned char fileType;    
     char d_name[256]; 			/* filename max filename is 255 characters */
+	uint64_t	entry_StartLocation; 	//Variable for start location of either 
+											// a file or directory
 	};
 
 // This is a private structure used only by fs_opendir, fs_readdir, and fs_closedir
@@ -66,6 +72,8 @@ typedef struct
 	char d_name[128];
 	int isUsed;									// 0 -> free, 1 -> used
 	int fileType;								// 0 -> dir, 1 -> file
+	struct fs_diriteminfo dir_DE_count[MAX_DE];
+
 
 	// unsigned int create_date; 			//variable for file create date
 	// unsigned int last_access_date; 			//variable for when you access/modify the file’s date
@@ -109,7 +117,6 @@ typedef struct VCB{
 
 	uint64_t numberOfBlocks;  			//integer variable for the number of blocks in VCB
 	uint64_t blockSize;					//variable bytes for the size of each blocks in VCB (512 bytes) 
-	uint64_t rootLocation;				//integer variable for root directory location (256 bytes)
 
 	unsigned int VCB_blockCount; 		//integer variable for starting position of free block space VCB (2560 bytes)
 	uint64_t freeSpace_BlockCount; 		//integer variable for block count of free space in VCB
@@ -129,6 +136,8 @@ typedef struct VCB{
 
 //VCB related functions
 unsigned int getVCB_BlockCount(uint64_t);
+fdDir * parse_DirectoryPath(char *);
+fdDir * parse_DirectoryEntry(struct fs_diriteminfo *);
 
 
 //Global variables for VCB, FreeSpace, and Directory
@@ -138,6 +147,7 @@ fdDir * current_OpenedDir_ptr;
 uint64_t current_OpenedDir_index;
 int * freespace;
 fdDir * directories;
+fdDir * fs_CWD;
 
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
