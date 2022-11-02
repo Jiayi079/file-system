@@ -103,7 +103,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     int j = 2; // child's directory entre start searching location
     while (j < 8)
     {
-        child = (Directory_Entry *)directories[parent_dirIndex].dirEntries[j];
+        child = (Directory_Entry *)directories[parent_dirIndex].dirEntry[j];
         if (strlen(child->filePath) == 0) // empty, can store into it
         {
             strcpy(child->file_name, pathname);
@@ -141,7 +141,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     directories[empty_dir_location].fileType = 0;
 
     Directory_Entry * current_DE;
-    current_DE = malloc(sizeof(Directory_Entry);
+    current_DE = malloc(sizeof(Directory_Entry));
 
     strcpy(current_DE->file_name, '.');
     // dir_location doesn't finish setting
