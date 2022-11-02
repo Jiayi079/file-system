@@ -150,7 +150,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 			return -1;
 		}
 		LBAwrite(vcb_Buffer, 1, 0);
-		init_freeSpace(JCJC_VCB);
+
+		// init_freeSpace(JCJC_VCB);
 		if (init_freeSpace(JCJC_VCB) != 6)
 		{
 			printf("Freespace has not been formated and initialized\n");
@@ -162,7 +163,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 			printf("Root Directory has not been formated and initialized\n");
 			return -1;
 		}
-
 	}
 
 
@@ -206,15 +206,15 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 	JCJC_VCB -> current_FreeBlockIndex = 0;
 	JCJC_VCB -> magicNumber = Magic_Number;
 	JCJC_VCB -> first_freespace = 1;
+	// *** TODO: need to add rootLocation, free_block_count, location_RootDirectory
+
 
 	//Since 1 byte consists of 8 bits, we need to find
 	//the number of bytes used for each block in the VCB
 	//then we can get the number of blocks needed for the initialized VCB
 	u_int64_t bytes_PerBlock = numberOfBlocks / 8;
 	if(numberOfBlocks % 8 > 0){
-
 		bytes_PerBlock++;
-
 	}
 
 	JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
@@ -329,6 +329,8 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
     de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);
     de[0].fileSize = dir_num_bytes;
 
+	// TODO: fileType, filePath, dirUsed should be added here
+
 	//Check if our first directory location exists, throw error if it doesn't exsist
     if (de[0].dir_Location == -1)
     {
@@ -388,7 +390,7 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 	// }
 
 	
-//Set the root directory, de, as the initial directory location
+	//Set the root directory, de, as the initial directory location
 	// rootDir_ptr = de;
 	// JCJC_VCB -> location_RootDirectory = rootDir_ptr -> directoryStartLocation;
 

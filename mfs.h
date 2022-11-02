@@ -150,17 +150,17 @@ int init__RootDir (volume_ControlBlock * JCJC_VCB);
 
 typedef struct Directory_Entry{
 
-	char file_name[256]; 				 //character variable to store file name
-	unsigned int dir_Location;			 //integer variable to store file location
-	int fileType;							// 0 -> dir    1 -> file
+	char file_name[256]; 				//character variable to store file name
+	unsigned int dir_Location;			//integer variable to store file location
+	size_t fileSize;					//variable for file size
 	
-	size_t fileSize;					 //variable for file size
-	char filePath[256];				 //file path
-	int dirUsed;					//to check if any Dir is in use, 0 is free, 1 is using
+	int fileType;						// 0->dir    1->file
+	char filePath[256];				 	//file path
+	int dirUsed;						//to check if any Dir is in use, 0 is free, 1 is using
 	// unsigned directory_entry; 		// there is 60 bytes directory entry
 
-	// time_t create_date; 			//variable for file create date
-	// time_t last_access_date; 			//variable for when you access/modify the file’s date
+	// time_t create_date; 				//variable for file create date
+	// time_t last_access_date; 		//variable for when you access/modify the file’s date
 	// char  comment [300]; 			// comment for the file
 
 }Directory_Entry;
