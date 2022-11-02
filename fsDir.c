@@ -194,7 +194,7 @@ char * get_parent_path(char * pathname)
     //set our partent_path_name starting with "/"
     char partent_path_name[256] = "/";
     
-    int cur_token_length;
+    int cur_token_length = 0;
     while(token!= NULL){
         //find out our current token length
         cur_token_length = strlen(token)+1;
@@ -209,8 +209,15 @@ char * get_parent_path(char * pathname)
     //set our partent_path_name's length correctly
     int ppnLength = strlen(partent_path_name) -1;
 
+    
     //----------------------
+    // cur_token_length = 7
+    // ppnlength = 22
+    // ./csc210/csc222/csc510     -> 23
+    // 
     int k = 0;
+
+    //TODO might be we can just make it toegther using k<=cur_token_length
     while(k<cur_token_length){
         partent_path_name[ppnLength - k] = 0;
         k++;
@@ -222,6 +229,42 @@ char * get_parent_path(char * pathname)
         partent_path_name[ppnLength - cur_token_length] = 0;
     }
 
+    save_ptr = partent_path_name;
 
-    return save_ptr = partent_path_name;
+    return save_ptr;
+}
+
+int fs_isFile(char * filename){
+    //set file path name array size is 256
+    char file_path_name[256];
+    
+    
+    if(filename[0] == '/'){
+        strcpy(file_path_name, filename);
+    }
+    
+    if(filename[0] != '/'){
+        strcpy(file_path_name, cwd);
+        int fpnLength = strlen(file_path_name);
+        
+        //-------------------- not sure
+        if(fpnLength > 1){
+        strcat(file_path_name, "/");
+        }
+        strcat(file_path_name, filename);
+
+    }
+
+    Directory_Entry * de;
+    
+    //to find our directory
+    int deIndex = getDirIndex(de, filename);
+
+    //if check the filetype is not equal to 1 will return 0
+    if(directories[deIndex].fileType != 1){
+        return 0;
+    }
+
+    return 1;
+    
 }
