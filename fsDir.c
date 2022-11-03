@@ -361,9 +361,18 @@ int fs_isDir(char * path)
     }
 
     return 1;  // return 1 if it is directory
-<<<<<<< HEAD
+
 }
 
-=======
+int fs_closedir(fdDir *dirp)
+{
+
+ if (dirp == NULL)
+ {
+    printf("[ERROR] fsDir.c closedir\n");
+    return -1;
+ }
+//  free(dirp);
+//  dirp = NULL;
+ return 0;
 }
->>>>>>> 3d5094c823bb5357301a65c4c858ddf799eab5de
