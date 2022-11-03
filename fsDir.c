@@ -359,3 +359,28 @@ int fs_isDir(char * path)
 
     return 1;  // return 1 if it is directory
 }
+
+
+int fs_stat(const char *path, struct fs_stat *buf){
+    Directory_Entry * de;
+
+    int number_of_child = 8;
+    for(int i=0; i < number_of_child; i++){
+        
+        de = (de *)directories[0].dirEntry[i];
+
+        if(strcmp(de->file_name, path) == 0){
+
+            buf->st_size = de->fileSize;
+            buf->st_blksize = JCJC_VCB->blockSize;
+            buf->st_blocks = sizeof(fdDir) / JCJC_VCB->blockSize;
+            //TODO make the time next time
+            // buf->st_accesstime
+            // buf->st_mtime
+            // buf->st_ctime
+            return 1;
+        }
+    }
+
+    return 0;
+}
