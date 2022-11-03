@@ -23,14 +23,14 @@
 int allocateFreeSpace_Bitmap(int block_count_needed)
 {
     int freespace_start_location = JCJC_VCB->current_FreeBlockIndex;
+    int count = 0;
+    int j, k;
 
     while(1)
     {
-        int count = 0;
-        int j, k;
         for (int i = freespace_start_location; i < JCJC_VCB->numberOfBlocks; i++)
         {
-            if (checkBit(i, freespace) == 0) //finding free space
+            if (checkBit(i, freespace) == 0) // finding free space
             {
                 count++;
                 // finding next allocated space location
@@ -43,9 +43,10 @@ int allocateFreeSpace_Bitmap(int block_count_needed)
                     count++;
                 }
             }
-            break;
+            break; // break outside of the loop to hold count
         }
 
+        // check if count is enough to hold everthing for block_count_needed
         if (count >= block_count_needed)
         {
             return freespace_start_location;
