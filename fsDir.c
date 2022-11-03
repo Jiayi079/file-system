@@ -214,10 +214,13 @@ int fs_rmdir(const char *pathname)
 
     char absolutePath[256];
 
-    if (strlen(pathname) > 0)
+    if (strlen(pathname) == 0)
     {
-
+        printf("[fsDir.c --- fs_rmdir] Can not remove directory since your enter pathname's length is 0\n");
+        return -1;
     }
+
+
     return 0;
 }
 
@@ -309,3 +312,54 @@ int fs_isFile(char * filename){
     return 1;
     
 }
+
+// return 1 -> directory, 0 -> otherwise
+// changing files' type
+int fs_isDir(char * path)
+{
+    // check if path is is '.' or '..'
+    // if it is, nothing need to check
+    if(strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
+    {
+        return 1; // return 1-> directory
+    }
+
+    char file_path_name[256];
+
+    if (path[0] != '/') // something in cwd
+    {
+        strcpy(file_path_name, cwd);
+        if (strlen(file_path_name) > 1)
+        {
+            // if file_path_name'e length is greater than 1, which means it is a directory
+            // therefore, we need add '/' to file_path_name to make sure adding path correctly
+            strcat(file_path_name, "/");
+        }
+        strcat(file_path_name, path); // finish copy all of things to get the correct path
+    }
+
+    // create a new directory entry to find the directory index in the directory array
+    Directory_Entry * de;
+
+    int deIndex = -1;
+
+    for (int i = 0; i < 21; i++) // set the maximum number of directories for now
+    {
+        de = (Directory_Entry *)directories[i].dirEntry[0];
+        // check if the directory entry is found
+        if (strcmp(file_path_name, de->filePath) == 0)
+        {
+            deIndex = i;
+            break;
+        }
+    }
+
+    if (deIndex == -1)
+    {
+        printf("[fsDir.c --- fs_isDir()] Givn path is not found\n");
+        return 0; // otherwise should return 0
+    }
+
+    return 1;  // return 1 if it is directory
+}
+
