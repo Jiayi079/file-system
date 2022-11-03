@@ -161,7 +161,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     memcpy(directories[empty_dir_location].dirEntry[0], (char *)current_DE, 512);
     memcpy(directories[empty_dir_location].dirEntry[1], (char *)parent_DE, 512);
 
-    int blockCount = (dir_DE_count * sizeof(Directory_Entry)) / 512 + 1;
+    int blockCount = (MAX_DE * sizeof(Directory_Entry)) / 512 + 1;
     // TODO
     // LBAwrite((char *)directories, blockCount, ); // last paremeter for directories location, doesn't finish
 
@@ -212,13 +212,50 @@ int fs_rmdir(const char *pathname)
         return -1;
     }
 
-    char absolutePath[256];
-
     if (strlen(pathname) == 0)
     {
         printf("[fsDir.c --- fs_rmdir] Can not remove directory since your enter pathname's length is 0\n");
         return -1;
     }
+
+    char absolutePath[256];
+
+    strcpy(absolutePath, cwd); // copy previous path into absolute path
+
+    if (strlen(cwd) > 1) // already have directory inside of cwd
+    {
+        strcat(absolutePath, "/"); // adding slash
+    }
+
+    strcat(absolutePath, pathname);
+
+    int remove_index = -1;
+
+    Directory_Entry * de_remove;
+
+    for (int i = 0; i < 21; i++)
+    {
+        de_remove = (Directory_Entry*)directories[i].dirEntry[0];
+        if (strcmp(de_remove->filePath, absolutePath) == 0)
+        {
+            remove_index = i;
+            break;
+        }
+    }
+
+    if (remove_index == -1)
+    {
+        printf("[fsDir.c --- fs_rmdir] Can not find the file/directory: %s\n", pathname);
+        return -1;
+    }
+
+    Directory_Entry * dir_need_to_be_removed;
+
+    if (directories[remove_index].fileType == 1) // is file
+    {
+        
+    }
+
 
 
     return 0;
@@ -361,9 +398,4 @@ int fs_isDir(char * path)
     }
 
     return 1;  // return 1 if it is directory
-<<<<<<< HEAD
 }
-
-=======
-}
->>>>>>> 3d5094c823bb5357301a65c4c858ddf799eab5de

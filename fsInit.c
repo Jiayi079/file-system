@@ -33,7 +33,7 @@
 // #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
-int dir_DE_count = 50; //set 50 for now as an example
+// int dir_DE_count = 50; //set 50 for now as an example
 
 
 
@@ -313,10 +313,12 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	//Find out how may blocks in dir by using the getVCB_BlokCount function
-	int dir_block_count = getVCB_BlockCount(sizeof(Directory_Entry) * dir_DE_count);
+	int dir_block_count = getVCB_BlockCount(sizeof(Directory_Entry) * 20);
+	printf("dir_block_count: %d\n", dir_block_count);
 
 	//Use getVCB_num_bytes to find out how many bytes in dir we will need
     int dir_num_bytes = getVCB_num_bytes(dir_block_count);
+	printf("dir_num_bytes: %d\n", dir_num_bytes);
 
 	//Allocate the number of bytes in dir, we had previously found from dir_num_bytes
     Directory_Entry * de = malloc(dir_num_bytes);
@@ -327,6 +329,8 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
 
 	//Use alllocateFreeSpace function to determine the free space we can use in the directory
     de[0].dir_Location = allocateFreeSpace_Bitmap(dir_num_bytes);
+	printf("de[0].dir_Location = %d\n", de[0].dir_Location);
+	printf("dir_num_bytes = %d\n", dir_num_bytes);
     de[0].fileSize = dir_num_bytes;
 
 	// TODO: fileType, filePath, dirUsed should be added here
@@ -340,7 +344,8 @@ int init__RootDir(volume_ControlBlock * JCJC_VCB){
         exit(-1);
     }
 
-
+	// free(de);
+	// de = NULL;
 
 	return 0;
 	
