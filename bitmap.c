@@ -43,9 +43,10 @@ int allocateFreeSpace_Bitmap(int block_count_needed)
                     count++;
                 }
             }
-            break;
+            break; // break outside of the loop to hold count
         }
 
+        // check if count is enough to hold everthing for block_count_needed
         if (count >= block_count_needed)
         {
             return freespace_start_location;
