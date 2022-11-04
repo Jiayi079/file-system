@@ -27,8 +27,10 @@
 #include "fsLow.h"
 
 #include <dirent.h>
-#define FT_REGFILE	DT_REG
-#define FT_DIRECTORY DT_DIR
+#define FT_REGFILE 1	
+#define DT_REG
+#define FT_DIRECTORY 0
+#define DT_DIR
 #define FT_LINK	DT_LNK
 
 #ifndef uint64_t
@@ -39,6 +41,8 @@ typedef u_int32_t uint32_t;
 #endif
 
 #define MAX_DE 50
+
+#define Delim "/"
 
 //Variables if isFile or isDirectory
 #define type_isDirectory 0
@@ -54,6 +58,8 @@ struct fs_diriteminfo
     char d_name[256]; 			/* filename max filename is 255 characters */
 	uint64_t	entry_StartLocation; 	//Variable for start location of either 
 											// a file or directory
+	unsigned char isFreeOrUsed; 
+
 	};
 
 // This is a private structure used only by fs_opendir, fs_readdir, and fs_closedir
@@ -143,8 +149,6 @@ fdDir * parse_DirectoryEntry(struct fs_diriteminfo *);
 //Global variables for VCB, FreeSpace, and Directory
 volume_ControlBlock * JCJC_VCB;
 fdDir * rootDir_ptr;
-fdDir * current_OpenedDir_ptr;
-uint64_t current_OpenedDir_index;
 int * freespace;
 fdDir * directories;
 fdDir * fs_CWD;
