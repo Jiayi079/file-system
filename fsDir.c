@@ -139,6 +139,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     strcpy(directories[empty_dir_location].d_name, pathname);
     directories[empty_dir_location].isUsed = 1;
     directories[empty_dir_location].fileType = 0;
+    directories[empty_dir_location].position_DE = 0;
 
     Directory_Entry * current_DE;
     current_DE = malloc(sizeof(Directory_Entry));
@@ -149,6 +150,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     current_DE->fileSize = sizeof(fdDir);
     strcpy(current_DE->filePath, absolutePath);
     current_DE->dirUsed = 1;
+    current_DE->d_reclen = MAX_NUMBER_OF_CHILDREN;
 
     Directory_Entry * parent_DE;
     parent_DE = malloc(sizeof(Directory_Entry));
@@ -438,3 +440,30 @@ int fs_stat(const char *path, struct fs_stat *buf){
     return 0;
 }
 
+int fs_readdir(fdDir *dirp)
+{
+    Directory_Entry * de;
+	Directory_Entry *current_DE;
+    Directory_Entry *position_DE;
+	if (dirp->position_DE >= number_of_child)
+	{
+		dirp->position_DE = 0; // reset to 0
+		// return NULL if we finish looping through our directory
+		return NULL;
+	}
+	while (dirp->position_DE < number_of_child)
+	{
+		current_DE = (Directory_Entry *)dirp->dirEntry[dirp->position_DE];
+		if (strlen(current_DE->file_name) > 0)
+		{
+			fsDi.d_reclen = current_DE->d_reclen;
+			fsDi.fileType = current_DE->fileType;
+			strcpy(fsDi.d_name, current_DE->fileName);
+			dirp->position_DE++;
+			return (&fsDi);
+		}
+		dirp->position_DE++;
+	}
+	dirp->position_DE = 0;
+	return NULL;
+}
