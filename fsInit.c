@@ -169,11 +169,12 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	//VCB status debugging 	
 	// LBAread
 	// LBAwrite(, 5, 0);
-	printf("*****VCB Status Overview*****\n");
+	printf("***********VCB Status Overview***********\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
 	printf("VCB has this block count: %d\n", JCJC_VCB -> VCB_blockCount);
 	printf("Free Space has this many blocks: %ld\n", JCJC_VCB -> freeSpace_BlockCount);
+	printf("*****************************************\n");
 
 	// printf("dir_DE_count: %d\n", dir_DE_count);
 
