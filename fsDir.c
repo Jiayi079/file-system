@@ -252,16 +252,144 @@ int fs_rmdir(const char *pathname)
         return -1;
     }
 
-    Directory_Entry * dir_need_to_be_removed;
+    // reamove the directory
+    remove_directory(remove_index);
+
+    // next step: find parent directory location in directories array
+    Directory_Entry * parent_dir;
+    int parent_index = -1;
+    for (int i = 0; i < 21; i++)
+    {
+        parent_dir = (Directory_Entry*)directories[i].dirEntry[0];
+        // check if the parent directory file path is equal to the global directory -> cwd
+        if (strcmp(parent_dir->filePath, cwd) == 0)
+        {
+            // if find successfully, keep the parent directory location and break loop
+            // parent_index are using to search its child directories later
+            parent_index = i;
+            break;
+        }
+    }
+
+    // check if the parent directory founded successfully
+    if (parent_index == -1)
+    {
+        printf("[fsDir.c --- fs_rmdir] Can not find the parent directory\n");
+        return -1;
+    }
+
+    // next step: need searching the child directories in directories array
+    Directory_Entry * child_dir;
+    int child_index = -1;
+
+    for (int i = 0; i < 21; i++)
+    {
+        child_dir = (Directory_Entry*)directories[parent_index].dirEntry[i];
+        // check if the current file name is the pathname we need to remove
+        if (strcmp(child_dir->file_name, pathname) == 0)
+        {
+            child_index = i; // find the location of the child directory
+            // break the loop, keep the location of the child directory
+            break;
+        }
+    }
+
+    // check if the child directory founded successfully
+    if (child_index == -1)
+    {
+        printf("[fsDir.c --- fs_rmdir] Can not find the child directory\n");
+    }
+
+    // remove the child directory entry
+    strcpy(child_dir->file_name, "");
+    child_dir->dir_Location = 0;
+    child_dir->fileSize = 0;
+    child_dir->fileType = 0;
+    strcpy(child_dir->filePath, "");
+    child_dir->dirUsed = 0;
+
+    // update the empty child directory entry to directories array
+    memcpy(directories[parent_index].dirEntry[child_index], (char *)child_dir, 512);
+
+    // next step: update the directories array
+    LBAwrite((char *)directories, length_of_dir, JCJC_VCB->location_RootDirectory);
+
+    return 0;
+}
+
+void remove_directory(int remove_index)
+{
+    // release free space -> set bit becomes free
+    char * buffer;
+    buffer = malloc(sizeof(char));
 
     if (directories[remove_index].fileType == 1) // is file
     {
 
+        for (int i = directories[remove_index].directoryStartLocation;
+            i < JCJC_VCB->numberOfBlocks; i++)
+        {
+            setBitFree(i, freespace);
+        }
     }
 
+    // release directories
+    directories[remove_index].d_reclen = 0;
+    directories[remove_index].dirEntryPosition = 0;
+    directories[remove_index].directoryStartLocation = 0;
+    directories[remove_index].blockIndex = 0;
+    strcpy(directories[remove_index].d_name, "");
+    directories[remove_index].isUsed = 0;
+    directories[remove_index].fileType = 0;
+    directories[remove_index].current_location = 0;
+
+    // realeae dirEntry[][]
+    Directory_Entry * dir_need_to_be_removed;
+    Directory_Entry * de_need_to_be_removed;
+    int child_remove_index = -1;
+    for (int i = 0; i < 8; i++)
+    {
+        de_need_to_be_removed = (Directory_Entry*)directories[remove_index].dirEntry[i];
+    
+        // make sure the first directory path not be deleted
+        if (i > 1)
+        {
+            // need remove each parent directory
+            if (strlen(de_need_to_be_removed->filePath) > 0)
+            {
+                child_remove_index = getDirIndex(dir_need_to_be_removed, de_need_to_be_removed->filePath);
+                if (child_remove_index!= -1)
+                {
+                    // something inside the parent directory, need to be removed
+                    remove_directory(child_remove_index);
+                }
+            }
+        }
+
+        // realease the directory entry
+        strcpy(de_need_to_be_removed->file_name, "");
+        de_need_to_be_removed->dir_Location = 0;
+        de_need_to_be_removed->fileSize = 0;
+        de_need_to_be_removed->fileType = 0;
+        strcpy(de_need_to_be_removed->filePath, "");
+        de_need_to_be_removed->dirUsed = 0;
+
+        // update the empty directory entry to directories array
+        memcpy(directories[remove_index].dirEntry[i], (char *)de_need_to_be_removed, 512);
 
 
-    return 0;
+    }
+
+    // release dir_DE_count[]
+    for (int i = 0; i < MAX_DE; i++)
+    {
+        directories[remove_index].dir_DE_count[i].d_reclen = 0;
+        directories[remove_index].dir_DE_count[i].fileType = 0;
+        strcpy(directories[remove_index].dir_DE_count[i].d_name, "");
+        directories[remove_index].dir_DE_count[i].entry_StartLocation = 0;
+        directories[remove_index].dir_DE_count[i].isFreeOrUsed = 0;
+    }
+
 }
 
 // to get our parent path 
@@ -465,7 +593,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 		}
 		dirp->current_location++;
 	}
-    
+
 	dirp->current_location = 0;
 	return NULL;
 }
