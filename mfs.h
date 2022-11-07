@@ -75,7 +75,7 @@ typedef struct
 	uint64_t	directoryStartLocation;			/*Starting LBA of directory */
 	uint64_t blockIndex;
 	char dirEntry[10][512]; 					//dirEntry have 10 arrays with each array have length 512
-	char d_name[128];
+	char d_name[256];
 	int isUsed;									// 0 -> free, 1 -> used
 	int fileType;								// 0 -> dir, 1 -> file
 	struct fs_diriteminfo dir_DE_count[MAX_DE];
@@ -153,12 +153,14 @@ fdDir * rootDir_ptr;
 int * freespace;
 fdDir * directories;
 fdDir * fs_CWD;
+int length_of_dir;
+int block_we_have;
 
 
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 void exitFileSystem ();
 int init_freeSpace (volume_ControlBlock * JCJC_VCB);
-int init__RootDir (volume_ControlBlock * JCJC_VCB);
+void init__RootDir ();
 
 
 
