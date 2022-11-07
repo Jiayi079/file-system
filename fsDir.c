@@ -28,6 +28,7 @@
 #include "fsInit.c"
 
 char cwd[512];
+struct fs_diriteminfo diriteminfo;
 
 // The mkdir() function creates a new, empty directory with name filename
 // return 0  -> successfully
@@ -139,7 +140,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     strcpy(directories[empty_dir_location].d_name, pathname);
     directories[empty_dir_location].isUsed = 1;
     directories[empty_dir_location].fileType = 0;
-    directories[empty_dir_location].position_DE = 0;
+    // directories[empty_dir_location].current_location = 0;
 
     Directory_Entry * current_DE;
     current_DE = malloc(sizeof(Directory_Entry));
@@ -150,7 +151,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     current_DE->fileSize = sizeof(fdDir);
     strcpy(current_DE->filePath, absolutePath);
     current_DE->dirUsed = 1;
-    current_DE->d_reclen = MAX_NUMBER_OF_CHILDREN;
+    // current_DE->d_reclen = 8;
 
     Directory_Entry * parent_DE;
     parent_DE = malloc(sizeof(Directory_Entry));
@@ -255,7 +256,7 @@ int fs_rmdir(const char *pathname)
 
     if (directories[remove_index].fileType == 1) // is file
     {
-        
+
     }
 
 
@@ -405,15 +406,15 @@ int fs_isDir(char * path)
 
 int fs_closedir(fdDir *dirp)
 {
-
- if (dirp == NULL)
- {
-    printf("[ERROR] fsDir.c closedir\n");
-    return -1;
- }
-//  free(dirp);
-//  dirp = NULL;
- return 0;
+    if (dirp == NULL)
+    {
+        printf("[ERROR] fsDir.c closedir\n");
+        return -1;
+    }
+    
+    //  free(dirp);
+    //  dirp = NULL;
+    return 0;
 }
 
 int fs_stat(const char *path, struct fs_stat *buf){
@@ -436,34 +437,35 @@ int fs_stat(const char *path, struct fs_stat *buf){
             return 1;
         }
     }
-
     return 0;
 }
 
-int fs_readdir(fdDir *dirp)
+
+
+struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
-    Directory_Entry * de;
-	Directory_Entry *current_DE;
-    Directory_Entry *position_DE;
-	if (dirp->position_DE >= number_of_child)
-	{
-		dirp->position_DE = 0; // reset to 0
-		// return NULL if we finish looping through our directory
+	Directory_Entry *de;
+
+	if (dirp->current_location >= 8)
+	{   // there are not enough directories space to read
+		dirp->current_location = 0;
 		return NULL;
 	}
-	while (dirp->position_DE < number_of_child)
+
+	while (dirp->current_location < 8)
 	{
-		current_DE = (Directory_Entry *)dirp->dirEntry[dirp->position_DE];
-		if (strlen(current_DE->file_name) > 0)
+		de = (Directory_Entry *)dirp->dirEntry[dirp->current_location];
+		if (strlen(de->file_name) > 0)
 		{
-			fsDi.d_reclen = current_DE->d_reclen;
-			fsDi.fileType = current_DE->fileType;
-			strcpy(fsDi.d_name, current_DE->fileName);
-			dirp->position_DE++;
-			return (&fsDi);
+			diriteminfo.d_reclen = 8;
+			diriteminfo.fileType = de->fileType;
+			strcpy(diriteminfo.d_name, de->file_name);
+			dirp->current_location++;
+			return (&diriteminfo);
 		}
-		dirp->position_DE++;
+		dirp->current_location++;
 	}
-	dirp->position_DE = 0;
+    
+	dirp->current_location = 0;
 	return NULL;
 }

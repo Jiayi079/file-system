@@ -70,15 +70,16 @@ struct fs_diriteminfo
 typedef struct
 	{
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
-	unsigned short  d_reclen;		/*length of this record */
-	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
-	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
+	unsigned short  d_reclen;					/*length of this record */
+	unsigned short	dirEntryPosition;			/*which directory entry position, like file pos */
+	uint64_t	directoryStartLocation;			/*Starting LBA of directory */
 	uint64_t blockIndex;
-	char dirEntry[10][512]; 		//dirEntry have 10 arrays with each array have length 512
+	char dirEntry[10][512]; 					//dirEntry have 10 arrays with each array have length 512
 	char d_name[128];
 	int isUsed;									// 0 -> free, 1 -> used
 	int fileType;								// 0 -> dir, 1 -> file
 	struct fs_diriteminfo dir_DE_count[MAX_DE];
+	unsigned int current_location;
 
 
 	// unsigned int create_date; 			//variable for file create date
