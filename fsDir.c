@@ -253,7 +253,7 @@ int fs_rmdir(const char *pathname)
 
     if (directories[remove_index].fileType == 1) // is file
     {
-        
+
     }
 
 
@@ -403,15 +403,15 @@ int fs_isDir(char * path)
 
 int fs_closedir(fdDir *dirp)
 {
-
- if (dirp == NULL)
- {
-    printf("[ERROR] fsDir.c closedir\n");
-    return -1;
- }
-//  free(dirp);
-//  dirp = NULL;
- return 0;
+    if (dirp == NULL)
+    {
+        printf("[ERROR] fsDir.c closedir\n");
+        return -1;
+    }
+    
+    //  free(dirp);
+    //  dirp = NULL;
+    return 0;
 }
 
 int fs_stat(const char *path, struct fs_stat *buf){
@@ -434,7 +434,6 @@ int fs_stat(const char *path, struct fs_stat *buf){
             return 1;
         }
     }
-
     return 0;
 }
 
