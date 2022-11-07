@@ -172,15 +172,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("*****VCB Status Overview*****\n");
 	printf("VCB has this number of blocks: %ld\n", JCJC_VCB -> numberOfBlocks);
 	printf("VCB has this block size: %ld\n", JCJC_VCB -> blockSize);
-	printf("VCB has this block count: %d\n", JCJC_VCB->VCB_blockCount);
+	printf("VCB has this block count: %d\n", JCJC_VCB -> VCB_blockCount);
+	printf("Free Space has this many blocks: %ld\n", JCJC_VCB -> freeSpace_BlockCount);
 
 	// printf("dir_DE_count: %d\n", dir_DE_count);
-
-
-	//Set opened directory pointer to NULL
-	//and reset openedDir index to 0
-	// current_OpenedDir_ptr = NULL;
-	// current_OpenedDir_index = 0;
 
 	return 0;
 }

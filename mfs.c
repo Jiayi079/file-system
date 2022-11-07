@@ -16,11 +16,12 @@
 **************************************************************/
 
 #include "mfs.h"
+#include "bitmap.c"
 
 //Function to parse pathname of a directory from a specifc entry
 fdDir * parse_DirectoryEntry(struct fs_diriteminfo * dir_entry){
 
-    if (dir_entry -> fileType != type_isDirectory){
+    if (dir_entry -> fileType != FT_DIRECTORY){
 
         return NULL;
     }
@@ -34,25 +35,72 @@ fdDir * parse_DirectoryEntry(struct fs_diriteminfo * dir_entry){
         return NULL;
     }
 
-    fdDir * fetched_Dir = malloc(sizeof(fdDir));
+    fdDir * relative_Pathname = malloc(sizeof(fdDir));
 
-    if(fetched_Dir == NULL){
+    if(relative_Pathname == NULL){
 
-        printf("Failed to malloc Fetched Directory\n");
+        printf("Failed to malloc relative_Pathname\n");
         return NULL;
 
     }
 
     LBAread(de_Buffer, fd_DirBlockCount, dir_entry -> entry_StartLocation);
-    memcpy(fetched_Dir, de_Buffer, sizeof(fdDir));
+    memcpy(relative_Pathname, de_Buffer, sizeof(fdDir));
 
 
-    return fetched_Dir;
+    return relative_Pathname;
+}
+
+fdDir * parse_DirectoryPath(char * DE_pathname){
+
+    fdDir * absolute_DirPath = malloc(sizeof(fdDir));
+    if(absolute_DirPath == NULL){
+
+        printf("Failed to malloc absolute_DirPath\n");
+        return -1;
+
+    }
+
+    memcpy(absolute_DirPath, fs_CWD, sizeof(fdDir));
+
+    char * pure_DirPathCopy = malloc(strlen(DE_pathname) + 1);
+    if(pure_DirPathCopy == NULL){
+
+        printf("Failed to malloc pure_DirPathCopy");
+        return -1;
+
+    }
+
+    strcpy(pure_DirPathCopy, DE_pathname);
+
+    char * path_Token = strtok(pure_DirPathCopy, Delim);
+
+    while(path_Token != NULL){
+
+        if(strcmp(path_Token, ".") != 0 || strcmp(path_Token, "") != 0){
+
+            for(int i = 1; i < MAX_DE; i++){
+                if(absolute_DirPath -> dir_DE_count[i].isFreeOrUsed == freeSpace_USED &&
+                    absolute_DirPath -> dir_DE_count[i].fileType == FT_DIRECTORY &&
+                    strcmp(absolute_DirPath -> dir_DE_count[i].d_name, path_Token) == 0)
+            }
+
+            free(absolute_DirPath);
+            absolute_DirPath = parse_DirectoryEntry(absolute_DirPath -> dir_DE_count + 1);
+            break;
+        }
+    }
+    
+    path_Token = strtok(NULL, Delim);
+
+   return absolute_DirPath;
+
 }
 
 
+
 //Function to get the current working directory(CWD)
-char * fs_getcwd(char *pathname, size_t size){
+char * fs_getcwd(char * pathname, size_t size){
 
     strcpy(pathname, ""); //set initial pathname for directory blank/empty string
 
@@ -96,7 +144,7 @@ char * fs_getcwd(char *pathname, size_t size){
     //If a certain directory is empty, then put a "." to mark as root dir
     if(strcmp(pathname, "") == 0){
 
-        strcpy(pathname, ".");
+        strcpy(pathname, "./");
 
     //If a directory is not empty, then move the root directory to 
     //the front of the pathname    
@@ -112,6 +160,28 @@ char * fs_getcwd(char *pathname, size_t size){
     dir_Copy = NULL;
     cwd_PathBuffer = NULL;
     return pathname;
+
+}
+
+//Function to set current working directory(Cwd)
+int fs_setcwd(char * pathname){
+
+    fdDir * set_ToThisDir = parse_DirectoryPath(pathname);
+
+    if(set_ToThisDir == NULL){
+
+        printf("Failed to malloc set_ToThisDir\n");
+        return -1;
+
+    }
+
+    printf("The previous CWD was: %s\n", fs_CWD -> d_name);
+
+    free(fs_CWD);
+    fs_CWD = set_ToThisDir;
+
+    printf("The current CWD is now: %s\n", fs_CWD -> d_name);
+    return 0;
 
 }
 

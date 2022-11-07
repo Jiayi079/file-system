@@ -28,6 +28,7 @@
 #include "fsInit.c"
 
 char cwd[512];
+struct fs_diriteminfo diriteminfo;
 
 // The mkdir() function creates a new, empty directory with name filename
 // return 0  -> successfully
@@ -139,6 +140,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     strcpy(directories[empty_dir_location].d_name, pathname);
     directories[empty_dir_location].isUsed = 1;
     directories[empty_dir_location].fileType = 0;
+    // directories[empty_dir_location].current_location = 0;
 
     Directory_Entry * current_DE;
     current_DE = malloc(sizeof(Directory_Entry));
@@ -149,6 +151,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     current_DE->fileSize = sizeof(fdDir);
     strcpy(current_DE->filePath, absolutePath);
     current_DE->dirUsed = 1;
+    // current_DE->d_reclen = 8;
 
     Directory_Entry * parent_DE;
     parent_DE = malloc(sizeof(Directory_Entry));
@@ -437,3 +440,32 @@ int fs_stat(const char *path, struct fs_stat *buf){
     return 0;
 }
 
+
+
+struct fs_diriteminfo *fs_readdir(fdDir *dirp)
+{
+	Directory_Entry *de;
+
+	if (dirp->current_location >= 8)
+	{   // there are not enough directories space to read
+		dirp->current_location = 0;
+		return NULL;
+	}
+
+	while (dirp->current_location < 8)
+	{
+		de = (Directory_Entry *)dirp->dirEntry[dirp->current_location];
+		if (strlen(de->file_name) > 0)
+		{
+			diriteminfo.d_reclen = 8;
+			diriteminfo.fileType = de->fileType;
+			strcpy(diriteminfo.d_name, de->file_name);
+			dirp->current_location++;
+			return (&diriteminfo);
+		}
+		dirp->current_location++;
+	}
+    
+	dirp->current_location = 0;
+	return NULL;
+}
