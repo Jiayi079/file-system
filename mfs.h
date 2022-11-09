@@ -27,10 +27,8 @@
 #include "fsLow.h"
 
 #include <dirent.h>
-#define FT_REGFILE 1	
-#define DT_REG
-#define FT_DIRECTORY 0
-#define DT_DIR
+#define FT_REGFILE DT_REG
+#define FT_DIRECTORY DT_DIR
 #define FT_LINK	DT_LNK
 
 #ifndef uint64_t
@@ -43,10 +41,7 @@ typedef u_int32_t uint32_t;
 #define MAX_DE 50
 
 #define Delim "/"
-
-//Variables if isFile or isDirectory
-#define type_isDirectory 0
-#define type_isFile 1
+ #define MAX_PATHSIZE 255 //Max path size of any given file (255 bytes)
 
 
 // This structure is returned by fs_readdir to provide the caller with information
@@ -144,7 +139,6 @@ typedef struct VCB{
 //VCB related functions
 unsigned int getVCB_BlockCount(uint64_t);
 fdDir * parse_DirectoryPath(char *);
-fdDir * parse_DirectoryEntry(struct fs_diriteminfo *);
 
 
 //Global variables for VCB, FreeSpace, and Directory

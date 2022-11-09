@@ -1,7 +1,23 @@
+/**************************************************************
+* Class:  CSC-415-01 Fall 2022
+* Names:Jiaming Zhao, Jiayi Gu, Carmelo De Guzman, Congcheng Zeng
+* Student IDs:921891383, 920024739, 918749005, 918327792
+* GitHub Name:akizhao614, Jiayi079, carmelodz, Congchengz
+* Group Name:JCJC
+* Project: Basic File System
+*
+* File: helperFunctions.h
+*
+* Description: 
+*	This file contains helper functions needed to execute commands
+*   such as checking and setting the bits in our bitmap, getting
+*   the number of bytes needed, and allocating free space.
+*
+**************************************************************/
+
+
 #include "mfs.h"
 
-//From git pull import, removing will generate complie error 
-//Will fix later 
 unsigned int getVCB_BlockCount(uint64_t bl_number);
 
 int allocateFreeSpace_Bitmap(int block_count_needed);

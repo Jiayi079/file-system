@@ -17,9 +17,6 @@
 #include "mfs.h"
 #include "fsLow.h"
 
-#define freeSpace_FREE 0
-#define freeSpace_USED 1
-
 //FreeSpace Bitmap-related functions
 
 //function to find out the how many continue freespace we can use 

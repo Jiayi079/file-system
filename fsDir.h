@@ -6,11 +6,13 @@
 * Group Name:JCJC
 * Project: Basic File System
 *
-* File: fsInit.c
+* File: fsDir.h
 *
-* Description: Main driver for file system assignment.
+* Description: This file contains functions on getting a
+*               specifc directory entry index as well as
+*               getting the index of an unused directory
 *
-* This file is where you will start and initialize your system
+*
 *
 **************************************************************/
 

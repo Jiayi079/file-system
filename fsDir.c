@@ -6,11 +6,11 @@
 * Group Name:JCJC
 * Project: Basic File System
 *
-* File: fsInit.c
+* File: fsDir.c
 *
-* Description: Main driver for file system assignment.
-*
-* This file is where you will start and initialize your system
+* Description: This file contains all the functions needed
+*               to access, open, read, close, etc. for
+*               all directory-related actions.
 *
 **************************************************************/
 
