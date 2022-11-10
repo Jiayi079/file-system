@@ -162,7 +162,7 @@ void init__RootDir ();
 typedef struct Directory_Entry{
 
 	char file_name[256]; 				//character variable to store file name
-	unsigned int dir_Location;			//integer variable to store file location
+	// unsigned int dir_Location;			//integer variable to store file location
 	size_t fileSize;					//variable for file size
 	
 	int fileType;						// 0->dir    1->file

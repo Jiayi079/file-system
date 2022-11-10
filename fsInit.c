@@ -150,12 +150,16 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		}
 		LBAwrite(vcb_Buffer, 1, 0);
 
+		// printf("*******test before init_freeSpace()\n");
+
 		// init_freeSpace(JCJC_VCB);
 		if (init_freeSpace(JCJC_VCB) != 6)
 		{
 			printf("Freespace has not been formated and initialized\n");
 			return -1;
 		}
+
+		// printf("*******test before RootDir()\n");
 
 		// if (init__RootDir() != 0)
 		// {
@@ -328,6 +332,8 @@ void init__RootDir(){
 
 	//TODO add time later
 
+	// printf("*******test before initialize root dir()\n");
+
 
 	//----------------------------
 	//Allocate the number of bytes in dir, we had previously found from dir_num_bytes
@@ -340,6 +346,8 @@ void init__RootDir(){
 	cur_de->dirUsed = 1;
 	//TODO add time later
 
+	// printf("*******test before initialize root dir()----1\n");
+
 	//----------------------------
 	Directory_Entry * parent_de = malloc(sizeof(Directory_Entry));
 	strcpy(parent_de->file_name, "..");
@@ -349,10 +357,14 @@ void init__RootDir(){
 	parent_de->dirUsed = 1;
 	//TODO add time later
 
+	// printf("*******test before initialize root dir()----2\n");
+
 
 	//put the init data back to the directory array we have 
 	memcpy(directories[0].dirEntry[0], (char *)cur_de, JCJC_VCB->blockSize); // set the cur_de size with 512
 	memcpy(directories[0].dirEntry[1], (char *)parent_de, JCJC_VCB->blockSize); // set the parent_de size with 512
+
+	// printf("*******test before initialize root dir()----3\n");
 
 
 	Directory_Entry * init_de = malloc(sizeof(Directory_Entry));
@@ -362,6 +374,7 @@ void init__RootDir(){
 	init_de->dirUsed = 0;
 	init_de->fileSize = 0;
 
+	// printf("*******test before initialize root dir()----4\n");
 
 	//----------------------------
 	int start_at_dirEntry = 2; // we will start at the dirEntry[2] first
@@ -369,6 +382,9 @@ void init__RootDir(){
 		memcpy(directories[0].dirEntry[start_at_dirEntry ], (char *)init_de, JCJC_VCB->blockSize);
 		start_at_dirEntry ++;
 	}
+
+	// printf("*******test before initialize root dir()----5\n");
+
 
 	//init the directory
 	
@@ -382,11 +398,26 @@ void init__RootDir(){
 		}
     }
 
+	// printf("*******test before initialize root dir()----6\n");
+
+
 	LBAwrite((char *)directories, length_of_dir, JCJC_VCB->location_RootDirectory);
 
-	for(int i = freespace + 2; i < length_of_dir; i++){
-		setBitFree(i,freespace);
-	}
+	// printf("*******test before initialize root dir()----7\n");
+
+
+	// for(int i = freespace + 2; i < length_of_dir; i++){
+	// 	// setBitFree(i,freespace);
+	// }
+	
+	// set all freespace become free first
+	// set first two freespace location in used
+	// TODO: change all setBitFree to mecome memset to avoid crush
+	memset(freespace, 0, length_of_dir);
+	memset(freespace, 1, 2);
+
+	// printf("*******test before initialize root dir()----8\n");
+
 
 	free(parent_de);
 	free(cur_de);
@@ -395,7 +426,4 @@ void init__RootDir(){
 	cur_de = NULL;
     init_de = NULL;
 
-
-	
-	
 }

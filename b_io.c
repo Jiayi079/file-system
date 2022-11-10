@@ -74,7 +74,7 @@ b_io_fd b_getFCB ()
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open (char * filename, int flags)
-	{
+{
 	b_io_fd returnFd;
 
 	//*** TODO ***:  Modify to save or set any information needed
@@ -87,12 +87,12 @@ b_io_fd b_open (char * filename, int flags)
 										// check for error - all used FCB's
 	
 	return (returnFd);						// all set
-	}
+}
 
 
 // Interface to seek function	
 int b_seek (b_io_fd fd, off_t offset, int whence)
-	{
+{
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
@@ -103,7 +103,7 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		
 		
 	return (0); //Change this
-	}
+}
 
 
 

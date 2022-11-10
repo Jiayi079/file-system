@@ -139,3 +139,18 @@ int fs_setcwd(char * pathname){
 
     return 0;
 }
+
+// this function used to set up the directory entry's data
+// TODO: update setDirectoryEntry to each file later
+Directory_Entry * setDirectoryEntry(Directory_Entry * de, char fileName, size_t file_size,
+    int file_type, char path, int dirUsed)
+{
+    de = malloc(sizeof(Directory_Entry)); // mallocate the size of the directory entry
+    strcpy(de->file_name, fileName);
+    de->fileSize = file_size;
+    de->fileType = file_type;
+    strcpy(de->filePath, path);
+    de->dirUsed = dirUsed;
+
+    return de;
+}

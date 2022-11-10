@@ -143,6 +143,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     // directories[empty_dir_location].current_location = 0;
 
     Directory_Entry * current_DE;
+    // current_DE = setDirectoryEntry(current_DE, '.', sizeof(fdDir), 0, absolutePath, 1);
     current_DE = malloc(sizeof(Directory_Entry));
 
     strcpy(current_DE->file_name, '.');
@@ -302,7 +303,7 @@ int fs_rmdir(const char *pathname)
 
     // remove the child directory entry
     strcpy(child_dir->file_name, "");
-    child_dir->dir_Location = 0;
+    // child_dir->dir_Location = 0;
     child_dir->fileSize = 0;
     child_dir->fileType = 0;
     strcpy(child_dir->filePath, "");
@@ -368,7 +369,7 @@ void remove_directory(int remove_index)
 
         // realease the directory entry
         strcpy(de_need_to_be_removed->file_name, "");
-        de_need_to_be_removed->dir_Location = 0;
+        // de_need_to_be_removed->dir_Location = 0;
         de_need_to_be_removed->fileSize = 0;
         de_need_to_be_removed->fileType = 0;
         strcpy(de_need_to_be_removed->filePath, "");
