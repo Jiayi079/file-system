@@ -22,15 +22,15 @@
 char * fs_getcwd(char * pathname, size_t size){
 
     //Check if the string length of the CWD is less than 
-    //the size of the directory's pathname
+    //the size of the our pathname buffer
     if(strlen(cwd) < size){
 
         //Copy this specifc cwd to our pathname pointer
-        strcpy(pathname, cwd);
+        strncpy(pathname, cwd, size);
 
     } else { //If the condition fails, print error message, and return NULL
         
-        printf("Length of cwd exceeds pathname's size\n");
+        printf("Length of CWD exceeds pathname buffer's size\n");
         return NULL;
     }
 
@@ -52,6 +52,8 @@ int fs_setcwd(char * pathname){
 
     } else {
 
+        /**************Start of Parsing Directory Path******************/
+
         //Check if the pathname starts with "..", if so
         //then copy this as the parent directory in our new CWD path
         if (pathname[0] == "." && pathname[1] == "."){
@@ -65,8 +67,6 @@ int fs_setcwd(char * pathname){
             }
 
         strcpy(go_ToThisDir, parent_Dir_ptr);
-
-        /**************Start of Parsing Directory Path******************/
 
         //If the pathname starts with ".", then it is the root
         //directory. If so, then copy this as root in our new CWD
