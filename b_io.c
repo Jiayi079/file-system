@@ -31,18 +31,9 @@ typedef struct b_fcb
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer -- LBA used
 	int buflen;		//holds how many valid bytes are in the buffer
-	int fd;         //holds the file descriptor
-	int flags;	    //holds the file flags
-	int offset;		
-
-
-	
-	// char file_name[256]; 			//character variable to store file name
-	// int location;			 //integer variable to store file location
-	// size_t file_size;				 //variable for file size
-	// // int create_date; 			//variable for file create date
-	// // int last_access_date; 			//variable for when you access/modify the file’s date
-	// // char comment [300]; 			// comment for the file
+	int b_flags; 	//holds the read/write file permissions
+	int fs_FD; 		//holds the system's file descriptor
+	int b_offset; 	//holds the position of where we are in the file
 
 	} b_fcb;
 	
@@ -266,23 +257,23 @@ b_io_fd b_open (char * filename, int flags)
 		return -1;
 	}
 
-	fcbArray[returnFd].fd = fd; // Save the linux file descriptor
+	fcbArray[returnFd].fs_FD = fd; // Save the linux file descriptor
 	fcbArray[returnFd].index = index_LBA;
-	fcbArray[returnFd].flags = flags;
+	fcbArray[returnFd].b_flags = flags;
 
 	if (buffer != NULL)
 	{
 		fcbArray[returnFd].buf = calloc(20 * B_CHUNK_SIZE, sizeof(char));
 		strcpy(fcbArray[returnFd].buf, buffer);
 		fcbArray[returnFd].buflen = 0; // have not read anything yet
-		fcbArray[returnFd].offset = 0; // have not read anything yet
+		fcbArray[returnFd].b_offset = 0; // have not read anything yet
 		return (returnFd);			   // all set
 	}
 	else
     {
 		fcbArray[returnFd].buf = malloc(20 * B_CHUNK_SIZE);
 		fcbArray[returnFd].buflen = 0; // have not read anything yet
-		fcbArray[returnFd].offset = 0; // have not read anything yet
+		fcbArray[returnFd].b_offset = 0; // have not read anything yet
     }
 
 	if (fcbArray[returnFd].buf == NULL)
@@ -306,8 +297,27 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		return (-1); 					//invalid file descriptor
 		}
 		
+		//Using the file system's file descriptor, check if file is 
+		//open, if not, print error message 
+		if(fcbArray[fd].fs_FD == -1){
+
+			printf("The file has not been opened yet/n");
+			return -1;
+		}
+
+		//Checks the file permissions, if the file is not set to read
+		//and write only, print error message 
+		if(!fcbArray[fd].b_flags & O_WRONLY || !fcbArray[fd].b_flags & O_RDWR){
+
+			printf("The file cannot be accessed due to R&W permissions\n");
+			return -1;
+
+		}
+
+	//Change where we are in the file by incrementing the offset
+	fcbArray[fd].b_offset += offset;
 		
-	return (0); //Change this
+	return (fcbArray[fd].index); //Return the current position in the buffer
 }
 
 

@@ -27,9 +27,8 @@
 #include "helperFunctions.h"
 #include "bitmap.c"
 
-#define Magic_Number 123456 //Will change later, temp placeholder
+#define Magic_Number 0x434A434A //"JCJC" converted to Hex (Big Endian)
 
-// #define Magic_Number 123
 // int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
 
 // int dir_DE_count = 50; //set 50 for now as an example

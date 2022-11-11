@@ -533,6 +533,19 @@ int fs_isDir(char * path)
 
 }
 
+//removes a file
+int fs_delete(char* filename)
+{
+    if (fs_isFile (filename))
+ { 
+        // check if file exists and is a file
+        // do delete files
+        fs_rmdir(filename);
+        return 0;
+ }
+    return -1;
+}
+
 int fs_closedir(fdDir *dirp)
 {
     if (dirp == NULL)
