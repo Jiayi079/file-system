@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "b_io.h"
+#include "fsDir.c"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
@@ -28,8 +29,12 @@ typedef struct b_fcb
 	{
 	/** TODO add al the information you need in the file control block **/
 	char * buf;		//holds the open file buffer
-	int index;		//holds the current position in the buffer
+	int index;		//holds the current position in the buffer -- LBA used
 	int buflen;		//holds how many valid bytes are in the buffer
+	int fd;         //holds the file descriptor
+	int flags;	    //holds the file flags
+	int offset;		
+
 
 	
 	// char file_name[256]; 			//character variable to store file name
@@ -77,15 +82,215 @@ b_io_fd b_open (char * filename, int flags)
 {
 	b_io_fd returnFd;
 
+	if (startup == 0) 
+	{
+		b_init();  //Initialize our system
+	}
+
+	char path[256];
+
+	if (strlen(cwd) > 1) // check if cwd already is a path
+	{
+		strcpy(path, cwd);
+        strcat(path, "/"); // copy cwd to path by adding a slash
+		strcat(path, filename); // add filename after adding slash
+	}
+	else
+    {
+		// if cwd is not a path, copy cwd to path without adding a slash
+        strcpy(path, cwd);
+        strcat(path, filename);
+    }
+
+	// create a temporary directory entry
+
+	char * buffer;
+
+	// TODO: not sure the maximum block count here, set 50 first?
+	buffer = (char *)malloc(50 * 512);
+	// TODO: not sure the buffer maximum count size
+	int bufferMax = 50;
+
+	Directory_Entry * de;
+	int tempIndex = -1; // set to -1 for now to check error later
+	for (int i = 0; i < 20; i++)
+	{
+		de = (Directory_Entry *)directories[i].dirEntry[0];
+		if (strcmp(de->filePath, path) == 0)
+		{
+			// if finding the path in de successfully
+			// keep the index i for later using
+			tempIndex = i;
+            break;
+		}
+	}
+
+	if (tempIndex != -1) // means we found the file in the directory
+	{
+		if (directories[tempIndex].fileType == 0) // 0 -> dir, 1 -> file
+		{
+			return -1; // terminate open function
+		}
+		else // otherwise this file type is a file
+		{
+			char * readedBuffer;
+			int offset = 0;
+			int alreadyReadedCount = 0;
+			readedBuffer = (char *)malloc(512);
+			// buffer, 50(max buffer count), directories[tempIndex].directoryStartLocation
+			for (int i = directories[tempIndex].directoryStartLocation; 
+				i < JCJC_VCB->numberOfBlocks; i++)
+			{
+				if (bufferMax == 0)
+				{
+					break;
+				}
+				LBAread(readedBuffer, 1, i);
+				// TODO: need to check signal??
+				offset = alreadyReadedCount * 512;
+				alreadyReadedCount++;
+				strcpy(buffer + offset, readedBuffer);
+				bufferMax--;
+			}
+			// free readedBuffer which is only used in the for loop
+			free(readedBuffer);
+            readedBuffer = NULL;
+		}
+	}
+
+
+	if (tempIndex == -1) // means the file does not exist
+    {
+		if ((flags & O_CREAT) == 0)
+		{
+			return -1; // terminate open function
+		}
+
+		int index_LBA = allocateFreeSpace_Bitmap(10);
+
+		Directory_Entry * child_de;
+		setDirectoryEntry(child_de, filename, 10 * JCJC_VCB->blockSize, 1, path, 1);
+
+		int cwdIndex;
+		// get cwdIndex
+		for (int i = 0; i < 20; i++)
+		{
+			child_de = (Directory_Entry *)directories[i].dirEntry[0];
+			if (strcmp(child_de->filePath, path) == 0)
+			{
+				cwdIndex = i;
+				break;
+			}
+		}
+
+		// TODO: may add check if cwdIndex is -1 ?
+
+		int check = -1;
+		for (int i = 0; i < 8; i++)
+        {
+			de = (Directory_Entry *)directories[cwdIndex].dirEntry[i];
+			if (de->dirUsed == 0)
+			{
+				check = i;
+				// don't have to used break, we need to keep the last one
+			}
+		}
+
+		// check if check is -1, which means child directory set failed
+		if (check == -1)
+		{
+			printf("[b_io.c -- b_open()]: child directory set failed\n");
+		}
+
+		memcpy(directories[cwdIndex].dirEntry[check], (char *)child_de, 512);
+
+		// find unused location in directory
+		int unused = -1;
+		for (int i = 1; i < 20; i++)
+		{
+			if (directories[i].isUsed == 0)
+			{
+				unused = i;
+                break;
+			}
+		}
+
+		if (unused!= -1)
+        {
+			printf("[b_io.c -- b_open()]: Don't have enough space in directory\n");
+			return -1;
+		}
+
+		strcpy(directories[unused].d_name, filename);
+		directories[unused].isUsed = 1;
+		directories[unused].fileType = 1;
+		directories[unused].dirLBA = index_LBA;
+
+		// TODO: need to add those value??
+		// unsigned short  d_reclen;
+		// uint64_t blockIndex;
+		// struct fs_diriteminfo dir_DE_count[MAX_DE];
+		// unsigned int current_location;
+
+		Directory_Entry * curr_de;
+		setDirectoryEntry(curr_de, ".", sizeof(fdDir), 0, path, 1);
+
+		Directory_Entry * par_de;
+		setDirectoryEntry(par_de, "..", sizeof(fdDir), 0, cwd, 1);
+
+		memcpy(directories[unused].dirEntry[0], (char *)curr_de, 512);
+		memcpy(directories[unused].dirEntry[1], (char *)par_de, 512);
+
+		LBAwrite((char *)directories, length_of_dir, JCJC_VCB->location_RootDirectory);
+
+		free(curr_de);
+		curr_de = NULL;
+		free(par_de);
+		par_de = NULL;
+        free(child_de);
+		child_de = NULL;
+	}
+
+
+
 	//*** TODO ***:  Modify to save or set any information needed
 	//
 	//
-		
-	if (startup == 0) b_init();  //Initialize our system
 	
 	returnFd = b_getFCB();				// get our own file descriptor
 										// check for error - all used FCB's
 	
+	if (returnFd == -1)
+    {
+		printf("[b_io.c -- b_open()]: b_getFCB() failed\n");
+		return -1;
+	}
+
+	fcbArray[returnFd].fd = fd; // Save the linux file descriptor
+	fcbArray[returnFd].index = index_LBA;
+	fcbArray[returnFd].flags = flags;
+
+	if (buffer != NULL)
+	{
+		fcbArray[returnFd].buf = calloc(20 * B_CHUNK_SIZE, sizeof(char));
+		strcpy(fcbArray[returnFd].buf, buffer);
+		fcbArray[returnFd].buflen = 0; // have not read anything yet
+		fcbArray[returnFd].offset = 0; // have not read anything yet
+		return (returnFd);			   // all set
+	}
+	else
+    {
+		fcbArray[returnFd].buf = malloc(20 * B_CHUNK_SIZE);
+		fcbArray[returnFd].buflen = 0; // have not read anything yet
+		fcbArray[returnFd].offset = 0; // have not read anything yet
+    }
+
+	if (fcbArray[returnFd].buf == NULL)
+	{
+		b_close(returnFd);
+		return -1;
+	}
+
 	return (returnFd);						// all set
 }
 
