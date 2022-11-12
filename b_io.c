@@ -325,17 +325,66 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 // Interface to write function	
 int b_write (b_io_fd fd, char * buffer, int count)
 	{
-	if (startup == 0) b_init();  //Initialize our system
+	if(strlen(buffer) == 0){
+  		exit(0);
+ 	}
+ 
+ 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
 	if ((fd < 0) || (fd >= MAXFCBS))
-		{
-		return (-1); 					//invalid file descriptor
-		}
-		
-		
-	return (0); //Change this
+	{
+	return (-1);      //invalid file descriptor
 	}
+  
+	// file can not open for this descriptor
+	if(fcbArray[fd].fs_FD == -1){
+		exit(-1);
+	}
+ 
+	// file can not open for this descriptor
+	if(!fcbArray[fd].b_flags & O_WRONLY || !fcbArray[fd].b_flags & O_RDWR){
+		exit(-1);
+	}
+
+	if(count < 200){
+	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
+
+	fcbArray[fd].buf_length += count;
+
+	// the default file block count we set is as 10
+	if(strncpy(fcbArray[fd].b_buffer) > 10*B_CHUNK_SIZE){
+
+		//relase the space
+		for (int i = directories[fcbArray[fd].index].directoryStartLocation;
+            i < JCJC_VCB->numberOfBlocks; i++)
+        {
+            setBitFree(i, freespace);
+        }
+
+		// after free the space, we allocate a new one
+		//to save not have over block
+		int safe_size = (fcbArray[fd].buf_length + (512 -1)) / B_CHUNK_SIZE;
+		allocateFreeSpace_Bitmap(safe_size, 0);
+
+	}
+
+	//we set the buffer maximum size is 50
+	LBAwrite(fcbArray[fd].buf, 50, fcbArray[fd].index);
+
+	//then return the value of number we have written
+	return (strlen(buffer));
+	}
+ 
+ 
+	//copy the length of the the buffer into our buf
+	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
+	fcbArray[fd].buf_length += strlen(buffer);
+	fcbArray[fd].b_offset += strlen(buffer);
+
+	//then return the value of number we have written
+	return (strlen(buffer));
+}
 
 
 
