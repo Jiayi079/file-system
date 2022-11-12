@@ -361,12 +361,76 @@ int cmd_cp (int argcnt, char *argvec[])
 ****************************************************/
 int cmd_mv (int argcnt, char *argvec[])
 	{
-#if (CMDMV_ON == 1)				
-	return -99;
-	// **** TODO ****  For you to implement	
+#if (CMDMV_ON == 1)
+
+	char move_Buffer[BUFFERLEN]; //Temp buffer for moving file 
+	int read_FileIndicator;  //Indicates if file has been read from fs
+	int write_FileIndicator; //Indicates if the file has been written by fs
+	int src_LocationTo;		//Location of source file 
+	int dest_LocationTo;	//Location of destination file
+	char * source_File; 			//Pointer to source file
+	char  * destination_File;	//Pointer to destination file
+
+	switch (argcnt)
+
+	{
+	//If argcnt is 3, then command can be used
+	case 3:
+
+		source_File = argvec[1];
+		destination_File = argvec[2];
+		break;
+
+	//If argcnt value is not 3, print error 
+	default:
+
+		printf("cmd_mv: Too few or too many invalid arguments\n");
+		return -1;
+	}
+
+	//If source item is not of type file, print error 
+	if (!fs_isFile(source_File))
+	{
+		printf("The entry: %s is not of type file\n", source_File);
+		return -1;
+	}
+
+	//Using b_open(), create the file in the destination location
+	//by using the source location of file as a starting point 
+	src_LocationTo = b_open(source_File, O_RDONLY);
+	dest_LocationTo = b_open(destination_File, O_WRONLY | O_CREAT | O_TRUNC);
+
+	//Using b_read(), read from the file's source location 
+	//and using b_write(), write to the file's destination location
+	do
+	{
+		read_FileIndicator = b_read(src_LocationTo, move_Buffer, BUFFERLEN);
+		write_FileIndicator = b_write(dest_LocationTo, move_Buffer, read_FileIndicator);
+
+	} while (read_FileIndicator == BUFFERLEN && write_FileIndicator >= 0);
+
+	//If our read and write indicator is equal to our bufferlength, and is
+	//0 or greater, then we can close the files in the source and destination
+	b_close(src_LocationTo);
+	b_close(dest_LocationTo);
+
+	//Check if the file has changed location, only then
+	//we can delete the file from the source location
+	if (read_FileIndicator >= 0 && writeCount >= 0)
+	{
+		fs_delete(source_File);
+	}
+
+	else
+
+	{
+		printf("Source file: %s cannot be deleted/n", source_File);
+		return -1;
+	}
+
 #endif
 	return 0;
-	}
+}
 
 /****************************************************
 *  Make Directory commmand
