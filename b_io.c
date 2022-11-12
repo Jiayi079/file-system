@@ -421,8 +421,14 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	return (0);	//Change this
 	}
 	
-// Interface to Close the file	
+//Interface to Close the file	
 int b_close (b_io_fd fd)
 	{
-
+	fcbArray[fd].fs_FD = -1; //close the file handle
+	free(fcbArray[fd].buf);	   //free the associated buffer
+	fcbArray[fd].buf = NULL;   //set it be null
+	fcbArray[fd].index = -1;
+	fcbArray[fd].b_flags = -1;
+	fcbArray[fd].buflen = 0; //holds how many valid bytes are in the buffer
+	fcbArray[fd].b_offset = 0; //holds the position of where we are in the file
 	}
