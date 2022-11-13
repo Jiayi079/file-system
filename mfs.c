@@ -41,7 +41,7 @@ fdDir * get_dir_entry(struct fs_diriteminfo *entry){
     if(ret_dir != NULL){
         memcpy(ret_dir, read_buffer, fdDir_size);
     }else{
-        printf("malloc ret_dir failed!");
+        printf("malloc ret_dir failed!\n");
         return NULL;
     }
 
@@ -66,14 +66,14 @@ char * get_path_last_slash(char * path){
     // start prepare the new ptr to replace and return
     char * path_before_last_slash = malloc(cut_index + 1);
     if(path_before_last_slash == NULL){
-        eprintf("malloc path_before_last_slash failed!");
+        eprintf("malloc path_before_last_slash failed!\n");
         return NULL;
     }
 
     char * left_path = malloc(strlen(path) - cut_index);
 
     if(path_before_last_slash == NULL){
-        eprintf("malloc left_path failed!");
+        eprintf("malloc left_path failed!\n");
         return NULL;
     }
 
