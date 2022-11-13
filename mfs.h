@@ -39,6 +39,11 @@ typedef u_int32_t uint32_t;
 #endif
 
 #define MAX_DE 50
+#define SPACE_IS_FREE 0
+#define SPACE_IN_USED 1
+
+#define DIR_TYPE 0
+#define FILE_TYPE 1
 
 #define Delim "/"
  #define MAX_PATHSIZE 255 //Max path size of any given file (255 bytes)
@@ -53,7 +58,7 @@ struct fs_diriteminfo
 	char d_name[256];			  /* filename max filename is 255 characters */
 	uint64_t entry_StartLocation; // Variable for start location of either
 								  //  a file or directory
-	unsigned int isFreeOrUsed;
+	unsigned int isFreeOrUsed;	// to check current entry is in used or not
 	uint64_t fileSize;				// used to keep the file size in bytes
 };
 
@@ -132,6 +137,11 @@ typedef struct VCB{
 //VCB related functions
 unsigned int getVCB_BlockCount(uint64_t);
 fdDir * parse_DirectoryPath(char *);
+
+//DIR relate functions
+fdDir * get_dir_entry(struct fs_diriteminfo *entry);
+char * get_path_last_slash(char * path);
+fdDir * get_dir_path(char * name);
 
 
 //Global variables for VCB, FreeSpace, and Directory
