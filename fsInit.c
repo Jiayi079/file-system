@@ -158,12 +158,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 		// printf("*******test before RootDir()\n");
 
-		// if (init__RootDir() != 0)
-		// {
-		// 	printf("Root Directory has not been formated and initialized\n");
-		// 	return -1;
-		// }
-		init__RootDir();
+		if (init__RootDir() != 0)
+		{
+			printf("Root Directory has not been formated and initialized\n");
+			return -1;
+		}
 	}
 
 
@@ -307,120 +306,76 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 }
 
 
-void init__RootDir(){
+int init__RootDir()
+{
+	fdDir * rootDir;
+	// NULL, "/"
+	rootDir = malloc(sizeof(fdDir));
 
-	//Find out how may blocks/bits in dir by using the getVCB_BlokCount function
-	directories = malloc(sizeof(fdDir) * 20);
-	// printf("dir_block_count: %d\n", fdDir * directories);
-
-	//Use getVCB_num_bytes to find out how many bytes in dir we will need
-    // int dir_num_bytes = getVCB_num_bytes(dir_block_count);
-	// printf("dir_num_bytes: %d\n", dir_num_bytes);
-
-
-	
-	allocateFreeSpace_Bitmap(length_of_dir, 0);
-
-	strcpy(directories[0].d_name, "");
-	// 0 -> free, 1 -> used
-	directories[0].isUsed = 1;
-	// 0 -> dir, 1 -> file
-	directories[0].fileType = 0;
-
-	//TODO add time later
-
-	// printf("*******test before initialize root dir()\n");
-
-
-	//----------------------------
-	//Allocate the number of bytes in dir, we had previously found from dir_num_bytes
-    Directory_Entry * cur_de = malloc(sizeof(Directory_Entry));
-	//Set the first dir name as "."
-    strcpy(cur_de->file_name, ".");
-	strcpy(cur_de->filePath, "/");
-	cur_de->fileSize = sizeof(fdDir);
-	cur_de->fileType = 0;
-	cur_de->dirUsed = 1;
-	//TODO add time later
-
-	// printf("*******test before initialize root dir()----1\n");
-
-	//----------------------------
-	Directory_Entry * parent_de = malloc(sizeof(Directory_Entry));
-	strcpy(parent_de->file_name, "..");
-	strcpy(parent_de->filePath, "/");
-	parent_de->fileSize = sizeof(fdDir);
-	parent_de->fileType = 0;
-	parent_de->dirUsed = 1;
-	//TODO add time later
-
-	// printf("*******test before initialize root dir()----2\n");
-
-
-	//put the init data back to the directory array we have 
-	memcpy(directories[0].dirEntry[0], (char *)cur_de, JCJC_VCB->blockSize); // set the cur_de size with 512
-	memcpy(directories[0].dirEntry[1], (char *)parent_de, JCJC_VCB->blockSize); // set the parent_de size with 512
-
-	// printf("*******test before initialize root dir()----3\n");
-
-
-	Directory_Entry * init_de = malloc(sizeof(Directory_Entry));
-	strcpy(init_de->file_name, "");
-	strcpy(init_de->filePath, "");
-	init_de->fileSize = sizeof(fdDir);
-	init_de->dirUsed = 0;
-	init_de->fileSize = 0;
-
-	// printf("*******test before initialize root dir()----4\n");
-
-	//----------------------------
-	int start_at_dirEntry = 2; // we will start at the dirEntry[2] first
-	while(start_at_dirEntry < 10){
-		memcpy(directories[0].dirEntry[start_at_dirEntry ], (char *)init_de, JCJC_VCB->blockSize);
-		start_at_dirEntry ++;
+	if (rootDir == NULL)
+    {
+		printf("[fsInit.c -- init__RootDir] malloc rootDir failed\n");
+		return -1;
 	}
 
-	// printf("*******test before initialize root dir()----5\n");
+	// set all rootDir become free space
+	memset(rootDir, 0, sizeof(fdDir));
 
+	int dirBlockCount = getVCB_BlockCount(sizeof(fdDir));
 
-	//init the directory
-	
-	for(int i=1; i<20; i++) {// 20 should be enough
-		strcpy(directories[i].d_name, "");
-		directories[i].fileType = 0;
-		directories[i].isUsed = 0;
-		directories[i].current_location = 0;
-		for(int j=0; j<10; j++){
-			memcpy(directories[i].dirEntry[j], (char *)init_de, JCJC_VCB->blockSize);
-		}
+	int freeSpace_available = allocateFreeSpace_Bitmap(dirBlockCount);
+
+	if (freeSpace_available <= 0)
+	{
+		printf("[fsInit.c -- init__RootDir] no enough free space\n");
+		return -1;
+	}
+
+	rootDir->directoryStartLocation = freeSpace_available;
+	rootDir->d_reclen = sizeof(fdDir);
+	rootDir->dirEntryCount = 2;
+
+	strcpy(rootDir->d_name, "/");
+
+	// initialize current directory entry .
+    strcpy(rootDir->dirEntry[0].d_name, ".");
+    rootDir->dirEntry[0].fileType = 0;		// set -> dir
+    rootDir->dirEntry[0].isFreeOrUsed = 1; 	// set used
+    rootDir->dirEntry[0].entry_StartLocation = freeSpace_available;
+    rootDir->dirEntry[0].d_reclen = sizeof(struct fs_diriteminfo);
+    rootDir->dirEntry[0].fileSize = sizeof(fdDir);
+
+	// initialized root directory
+	memcpy(rootDir->dirEntry + 1, rootDir->dirEntry, sizeof(struct fs_diriteminfo));
+
+	// the first directory need to be named ".."
+	strcpy(rootDir->dirEntry[1].d_name, "..");
+
+	// loop through the rest of entries to mark them as free
+    for (int i = 2; i < 8; i++)
+    {
+        rootDir->dirEntry[i].isFreeOrUsed = 0;
     }
 
-	// printf("*******test before initialize root dir()----6\n");
+	// check if the rootDir initialized successfully
+	if (rootDir == NULL)
+	{
+		printf("[fsInit.c -- init__RootDir] rootDir init failed\n");
+		return -1;
+	}
+
+	// set up the directory file
+	int writebyLBA = updateByLBAwrite(rootDir, rootDir->d_reclen, rootDir->directoryStartLocation);
+
+	// TODO: comment later to check if it works
+	if (fs_CWD != NULL && rootDir->directoryStartLocation == rootDir->directoryStartLocation)
+    {
+        memcpy(fs_CWD, rootDir, sizeof(fdDir));
+    }
+
+	fs_CWD = rootDir;
+	JCJC_VCB->location_RootDirectory = fs_CWD->directoryStartLocation;
 
 
-	LBAwrite((char *)directories, length_of_dir, JCJC_VCB->location_RootDirectory);
-
-	// printf("*******test before initialize root dir()----7\n");
-
-
-	// for(int i = freespace + 2; i < length_of_dir; i++){
-	// 	// setBitFree(i,freespace);
-	// }
-	
-	// set all freespace become free first
-	// set first two freespace location in used
-	// TODO: change all setBitFree to mecome memset to avoid crush
-	memset(freespace, 0, length_of_dir);
-	memset(freespace, 1, 2);
-
-	// printf("*******test before initialize root dir()----8\n");
-
-
-	free(parent_de);
-	free(cur_de);
-	free(init_de);
-	parent_de = NULL;
-	cur_de = NULL;
-    init_de = NULL;
-
+	return 0;
 }

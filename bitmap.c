@@ -20,7 +20,7 @@
 //FreeSpace Bitmap-related functions
 
 //function to find out the how many continue freespace we can use 
-int allocateFreeSpace_Bitmap(int block_count_needed,int index)
+int allocateFreeSpace_Bitmap(int block_count_needed)
 {
     int freespace_start_location = JCJC_VCB->current_FreeBlockIndex;
     int count = 0;
