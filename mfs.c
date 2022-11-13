@@ -15,7 +15,6 @@
 **************************************************************/
 
 #include "mfs.h"
-#include "bitmap.c"
 #include "fsDir.c"
 
 //Function to get the current working directory(CWD)

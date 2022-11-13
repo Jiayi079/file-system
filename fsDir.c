@@ -634,15 +634,16 @@ int getDirIndex(Directory_Entry * Dir, char *path){
 
 
 int getNotInUseDir(){
-    int  i = -1;
-    while(i < 10){
-        if(directories[i].dirUsed == 0){
+    
+    int index_DirNotUsed = -1;
+    while(index_DirNotUsed < 10){
+        if(directories[index_DirNotUsed].dirUsed == 0){
             //if we find the unuse dir, if will return the index value
-            return i;
+            return index_DirNotUsed;
         }
-        i++;
+        index_DirNotUsed++;
     }
 
-    //if not find will reutn -1
+    //if not found, will return -1
     return -1;
 }

@@ -75,6 +75,10 @@ typedef struct
 	int fileType;								// 0 -> dir, 1 -> file
 	struct fs_diriteminfo dir_DE_count[MAX_DE];
 	unsigned int current_location;
+	int dirUsed;						//to check if any Dir is in use, 0 is free, 1 is using
+	char file_name[256]; 				//character variable to store file name
+	char filePath[256];				 	//file path
+	size_t fileSize;					//variable for file size
 
 
 	// unsigned int create_date; 			//variable for file create date
@@ -164,10 +168,10 @@ typedef struct Directory_Entry{
 	char file_name[256]; 				//character variable to store file name
 	// unsigned int dir_Location;			//integer variable to store file location
 	size_t fileSize;					//variable for file size
+	int dirUsed;						//to check if any Dir is in use, 0 is free, 1 is using
 	
 	int fileType;						// 0->dir    1->file
 	char filePath[256];				 	//file path
-	int dirUsed;						//to check if any Dir is in use, 0 is free, 1 is using
 	// unsigned directory_entry; 		// there is 60 bytes directory entry
 
 	// time_t create_date; 				//variable for file create date
