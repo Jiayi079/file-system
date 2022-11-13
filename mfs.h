@@ -79,6 +79,7 @@ typedef struct
 	char file_name[256]; 				//character variable to store file name
 	char filePath[256];				 	//file path
 	size_t fileSize;					//variable for file size
+	uint64_t dirLBA; 					//Starting position of LBA in directory
 
 
 	// unsigned int create_date; 			//variable for file create date

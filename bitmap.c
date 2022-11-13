@@ -20,7 +20,7 @@
 //FreeSpace Bitmap-related functions
 
 //function to find out the how many continue freespace we can use 
-int allocateFreeSpace_Bitmap(int block_count_needed)
+int allocateFreeSpace_Bitmap(int block_count_needed,int index)
 {
     int freespace_start_location = JCJC_VCB->current_FreeBlockIndex;
     int count = 0;
@@ -87,4 +87,24 @@ void setBitUsed(uint64_t block_index, int * freespace)
 void setBitFree(uint64_t block_index, int * freespace)
 {
     freespace[block_index / 8] &= ~(1 << block_index % 8);
+}
+
+//Function to get the block count in the VCB
+unsigned int getVCB_BlockCount(uint64_t bl_number)
+{
+    int result = bl_number / JCJC_VCB -> blockSize;
+    if (bl_number % JCJC_VCB -> blockSize > 0)
+    {
+        result++;
+    }
+    return result;
+}
+
+
+
+//Function to get how many bytes are needed from our VCB
+unsigned int getVCB_num_bytes(uint64_t block_count)
+{
+    int result = block_count * JCJC_VCB -> blockSize;
+    return result;
 }

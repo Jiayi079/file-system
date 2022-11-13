@@ -58,7 +58,7 @@ b_io_fd b_getFCB ()
 	{
 	for (int i = 0; i < MAXFCBS; i++)
 		{
-		if (fcbArray[i].buff == NULL)
+		if (fcbArray[i].buf == NULL)
 			{
 			return i;		//Not thread safe (But do not worry about it for this assignment)
 			}
@@ -72,6 +72,9 @@ b_io_fd b_getFCB ()
 b_io_fd b_open (char * filename, int flags)
 {
 	b_io_fd returnFd;
+
+	int fd;
+	int index_LBA;
 
 	if (startup == 0) 
 	{
@@ -157,7 +160,7 @@ b_io_fd b_open (char * filename, int flags)
 			return -1; // terminate open function
 		}
 
-		int index_LBA = allocateFreeSpace_Bitmap(10);
+		int index_LBA = allocateFreeSpace_Bitmap(10, 0);
 
 		Directory_Entry * child_de;
 		setDirectoryEntry(child_de, filename, 10 * JCJC_VCB->blockSize, 1, path, 1);
@@ -350,10 +353,10 @@ int b_write (b_io_fd fd, char * buffer, int count)
 	if(count < 200){
 	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
 
-	fcbArray[fd].buf_length += count;
+	fcbArray[fd].buflen += count;
 
 	// the default file block count we set is as 10
-	if(strncpy(fcbArray[fd].b_buffer) > 10*B_CHUNK_SIZE){
+	if(strlen(fcbArray[fd].buf) > 10*B_CHUNK_SIZE){
 
 		//relase the space
 		for (int i = directories[fcbArray[fd].index].directoryStartLocation;
@@ -364,7 +367,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 		// after free the space, we allocate a new one
 		//to save not have over block
-		int safe_size = (fcbArray[fd].buf_length + (512 -1)) / B_CHUNK_SIZE;
+		int safe_size = (fcbArray[fd].buflen + (512 -1)) / B_CHUNK_SIZE;
 		allocateFreeSpace_Bitmap(safe_size, 0);
 
 	}
@@ -379,7 +382,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
  
 	//copy the length of the the buffer into our buf
 	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
-	fcbArray[fd].buf_length += strlen(buffer);
+	fcbArray[fd].buflen += strlen(buffer);
 	fcbArray[fd].b_offset += strlen(buffer);
 
 	//then return the value of number we have written

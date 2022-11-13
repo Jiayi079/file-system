@@ -17,25 +17,25 @@
 #include "mfs.h"
 #include "fsLow.h"
 
-//Function to get the block count in the VCB
-unsigned int getVCB_BlockCount(uint64_t bl_number)
-{
-    int result = bl_number / JCJC_VCB -> blockSize;
-    if (bl_number % JCJC_VCB -> blockSize > 0)
-    {
-        result++;
-    }
-    return result;
-}
+// //Function to get the block count in the VCB
+// unsigned int getVCB_BlockCount(uint64_t bl_number)
+// {
+//     int result = bl_number / JCJC_VCB -> blockSize;
+//     if (bl_number % JCJC_VCB -> blockSize > 0)
+//     {
+//         result++;
+//     }
+//     return result;
+// }
 
 
 
-//Function to get how many bytes are needed from our VCB
-unsigned int getVCB_num_bytes(uint64_t block_count)
-{
-    int result = block_count * JCJC_VCB -> blockSize;
-    return result;
-}
+// //Function to get how many bytes are needed from our VCB
+// unsigned int getVCB_num_bytes(uint64_t block_count)
+// {
+//     int result = block_count * JCJC_VCB -> blockSize;
+//     return result;
+// }
 
 //From git pull import, removing will generate complie error 
 //Will fix later 

@@ -23,6 +23,7 @@
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "helperFunctions.h"
 
 #define Magic_Number 0x434A434A //"JCJC" converted to Hex (Big Endian)
 
@@ -318,7 +319,7 @@ void init__RootDir(){
 
 
 	
-	allocateFreeSpace_Bitmap(length_of_dir);
+	allocateFreeSpace_Bitmap(length_of_dir, 0);
 
 	strcpy(directories[0].d_name, "");
 	// 0 -> free, 1 -> used

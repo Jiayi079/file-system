@@ -17,10 +17,11 @@
 
 
 #include "mfs.h"
+#include "bitmap.c"
 
 unsigned int getVCB_BlockCount(uint64_t bl_number);
 
-int allocateFreeSpace_Bitmap(int block_count_needed);
+int allocateFreeSpace_Bitmap(int block_count_needed, int index);
 
 unsigned int getVCB_num_bytes(uint64_t block_count);
 
