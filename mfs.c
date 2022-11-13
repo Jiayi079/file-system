@@ -117,3 +117,61 @@ int updateByLBAwrite(void *fdDir, uint64_t length, uint64_t startingPosition)
     buffer = NULL;
     return 0;
 }
+
+fdDir * get_dir_path(char * name){
+    fdDir * get_dir = malloc(sizeof(fdDir));
+    int fddir_size = sizeof(fdDir);
+
+    if(get_dir != NULL){
+        memcpy(get_dir, fs_CWD, fddir_size);
+    }else{
+        eprintf("malloc get_dir failed!\n");
+        return NULL;
+    }
+
+    // try to copy name to avoid modifying it using strtok()
+    char * copy_name = malloc(strlen(name) + 1);
+
+    if(copy_name != NULL){
+        strcpy(copy_name, name);
+    }else{
+        eprintf("malloc copy_name failed!\n");
+        return NULL;
+    }
+
+    // then we will split the string by delimeter
+    char delimeter = "/";
+    char * token = strtok(copy_name, delimeter);
+
+
+    //and we use a whild loop to check the whole list to find the directory
+    while(token!= NULL){
+
+        //if token is "." or empty it will means this is our cur dir
+        //if not "." or empty it will keep finding the next
+        if(strcmp(token, ".") != 0 ||strcmp(token, "") != 0){
+            int  j = 0;
+
+            for(int i=1; i < MAX_ENTRIES_NUMBER; i++){
+                // to make sure is using space, a directory and name match
+                if(get_dir->dirEntry[i].isFreeOrUsed == SPACE_IN_USED &&
+                   get_dir->dirEntry[i].fileType == DIR_TYPE &&
+                   strcmp(get_dir->dirEntry[i].d_name, token) == 0)
+                   {
+                    free(get_dir);
+                    get_dir = get_dir_entry(get_dir->dirEntry + i);
+                    j = i;
+                    break;
+                   }
+                   j = i;
+            }
+
+            //if we didn't find the directory, that means we have fail to find
+            if(j == MAX_ENTRIES_NUMBER){
+                return NULL;
+            }
+        }
+        token = strtok(NULL, delimeter);
+    }
+    return get_dir;
+}
