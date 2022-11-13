@@ -21,7 +21,7 @@
 
 unsigned int getVCB_BlockCount(uint64_t bl_number);
 
-int allocateFreeSpace_Bitmap(int block_count_needed, int index);
+int allocateFreeSpace_Bitmap(int block_count_needed);
 
 unsigned int getVCB_num_bytes(uint64_t block_count);
 

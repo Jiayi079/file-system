@@ -138,7 +138,8 @@ fdDir * parse_DirectoryPath(char *);
 volume_ControlBlock * JCJC_VCB;
 fdDir * rootDir_ptr;
 int * freespace;
-fdDir * directories;
+fdDir * directories; // openDir
+uint64_t openedDirEntryIndex;
 fdDir * fs_CWD;
 int length_of_dir;
 int block_we_have;

@@ -160,7 +160,7 @@ b_io_fd b_open (char * filename, int flags)
 			return -1; // terminate open function
 		}
 
-		int index_LBA = allocateFreeSpace_Bitmap(10, 0);
+		int index_LBA = allocateFreeSpace_Bitmap(10);
 
 		Directory_Entry * child_de;
 		setDirectoryEntry(child_de, filename, 10 * JCJC_VCB->blockSize, 1, path, 1);
@@ -368,7 +368,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		// after free the space, we allocate a new one
 		//to save not have over block
 		int safe_size = (fcbArray[fd].buflen + (512 -1)) / B_CHUNK_SIZE;
-		allocateFreeSpace_Bitmap(safe_size, 0);
+		allocateFreeSpace_Bitmap(safe_size);
 
 	}
 
