@@ -198,3 +198,19 @@ fdDir * fs_opendir(const char *name)
     path = NULL;
     return directories;
 }
+
+
+//to read the dirEntry list
+struct fs_diriteminfo *fs_readdir(fdDir *dirp){
+    int check_de_index = openedDirEntryIndex;
+
+    while(check_de_index < MAX_ENTRIES_NUMBER){
+        if(dirp->dirEntry[check_de_index].isFreeOrUsed == SPACE_IN_USED){
+            openedDirEntryIndex = check_de_index + 1;
+            return dirp->dirEntry + check_de_index;
+        }
+        check_de_index++;
+    }
+    return NULL;
+
+}
