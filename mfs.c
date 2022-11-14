@@ -398,7 +398,6 @@ fdDir * fs_opendir(const char *name)
 //to read the dirEntry list
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     int check_de_index = openedDirEntryIndex;
-
     while(check_de_index < MAX_ENTRIES_NUMBER){
         if(dirp->dirEntry[check_de_index].isFreeOrUsed == SPACE_IN_USED){
             openedDirEntryIndex = check_de_index + 1;
@@ -476,6 +475,7 @@ int fs_isFile(char *path)
     return result;
 }
 
+// to load the status of the file in the opened directory
 int fs_stat(const char *path, struct fs_stat *buf)
 {
     // because it is utilizing an existing directory, it shouldn't fail.
@@ -486,15 +486,54 @@ int fs_stat(const char *path, struct fs_stat *buf)
         // also check if the directory is what we are looking for
             strcmp(directories->dirEntry[i].d_name, path) == 0)
         {
-            
+            // set up the data to fs_stat struct
             buf->st_blksize = JCJC_VCB->blockSize;
             buf->st_size = directories->dirEntry[i].fileSize;
             buf->st_blocks = getBlockCount(buf->st_size);
-            // todo for time managements
+            // when we finish setting up the data, finish this function
             return 0;
         }
     }
 
-    // not found, but should not happen
+    // return -1 if only if didn't find the path or if the directory all full
     return -1;
 }
+
+
+int fs_isDir(char * pathname){
+    fdDir * cp_cwd = fs_CWD;
+    printf("the original fs cwd is: %X", fs_CWD);
+
+    //replace the cwd by our open_dir if that is opened
+    int dir_open = 0;
+    if(directories == NULL){
+        printf("[mfs.c -- fs_isDir] directories is NULL\n");
+        return -1;
+    }else{
+        dir_open = 1;
+        fs_CWD = directories;
+    }
+
+    //use get_dir_path to check DIR_TYPE while running
+    fdDir * tempPtr = get_dir_path(pathname);
+    int result = 0;
+    if(tempPtr == NULL){
+        printf("[mfs.c -- fs_isDir] tempPtr is NULL\n");
+        return -1;
+    }else{
+        result = 1;
+    }
+
+
+    //rest athe fs_CWD
+    fs_CWD = cp_cwd;
+    
+    //free the retPtr
+    free(tempPtr);
+    tempPtr = NULL;
+    return result;
+}
+
+
+
+
