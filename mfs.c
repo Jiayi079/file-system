@@ -416,3 +416,62 @@ int fs_closedir(fdDir *dirp){
     return 0;
 }
 
+int fs_isFile(char *path)
+{
+    // keep a copy of fsCWD and openedDir
+    fdDir *fd_Dir = fs_CWD;
+
+    // replace cwd by openedDir if a directory is open
+    int checkDirOpened = 0;
+    if (directories != NULL)
+    {
+        checkDirOpened = 1;
+        fs_CWD = directories;
+    }
+
+    // make a copy and substring before the last slash
+    char *pathBeforeLastSlash = malloc(strlen(path) + 1);
+    if (pathBeforeLastSlash == NULL)
+    {
+        printf("[mfs.c -- fs_isFile] malloc pathBeforeLastSlash failed\n");
+        return -1;
+    }
+
+    strcpy(pathBeforeLastSlash, path);
+    char * filename = getPathByLastSlash(pathBeforeLastSlash);
+
+    // find the directory that is expected for holding that file
+    fdDir * new_dir = getDirByPath(pathBeforeLastSlash);
+
+    int result = 0;
+
+    // if the path is not even in a directory, then we don't need to check anymore
+    if (new_dir != NULL)
+    {
+        // check if the item is inside this directory
+        for (int i = 2; i < 8; i++)
+        { // make sure that is a used space, a directory and name matched
+            if (new_dir->dirEntry[i].isFreeOrUsed == 1 &&
+                new_dir->dirEntry[i].fileType == 1 &&
+                strcmp(new_dir->dirEntry[i].d_name, filename) == 0)
+            {
+                result = 1;
+            }
+        }
+    }
+
+    // make sure we reset and also free the retPtr
+    if (checkDirOpened)
+    {
+        fs_CWD = fd_Dir;
+    }
+
+    free(new_dir);
+    new_dir = NULL;
+    free(pathBeforeLastSlash);
+    pathBeforeLastSlash = NULL;
+    free(filename);
+    filename = NULL;
+
+    return result;
+}
