@@ -220,3 +220,44 @@ int fs_closedir(fdDir *dirp){
     return 0;
 
 }
+
+int fs_isDir(char * pathname){
+    fdDir * cp_cwd = fs_CWD;
+    printf("the original fs cwd is: %X", fs_CWD);
+
+    //replace the cwd by our open_dir if that is opened
+    int dir_open = 0;
+    if(directories == NULL){
+        exit(-1);
+    }else{
+        dir_open = 1;
+        fs_CWD = directories;
+    }
+
+    //use get_dir_path to check DIR_TYPE while running
+    fdDir * retPtr = get_dir_path(pathname);
+    int result = 0;
+    if(retPtr == NULL){
+        return NULL;
+    }else{
+        result = 1;
+    }
+
+
+    //rest athe fs_CWD
+    fs_CWD = cp_cwd;
+    
+    //free the retPtr
+    free(retPtr);
+    retPtr = NULL;
+    return result;
+}
+
+// to load the status of the file in the opened directory
+int fs_stat(const char *path, struct fs_stat *buf){
+
+
+    return -1;
+}
+
+
