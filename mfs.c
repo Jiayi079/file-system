@@ -475,3 +475,26 @@ int fs_isFile(char *path)
 
     return result;
 }
+
+int fs_stat(const char *path, struct fs_stat *buf)
+{
+    // because it is utilizing an existing directory, it shouldn't fail.
+    for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
+    {
+        // check if the driectories's location is used
+        if (directories->dirEntry[i].isFreeOrUsed == 1 &&
+        // also check if the directory is what we are looking for
+            strcmp(directories->dirEntry[i].d_name, path) == 0)
+        {
+            
+            buf->st_blksize = JCJC_VCB->blockSize;
+            buf->st_size = directories->dirEntry[i].fileSize;
+            buf->st_blocks = getBlockCount(buf->st_size);
+            // todo for time managements
+            return 0;
+        }
+    }
+
+    // not found, but should not happen
+    return -1;
+}
