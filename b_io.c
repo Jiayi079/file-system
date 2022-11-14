@@ -389,28 +389,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 	return (strlen(buffer));
 }
 
-// return the exactly directory we find
-// return NULL if not found anything
-fdDir * fs_opendir(const char *name)
-{
-    // copy the name to avoid modifying it
-    char *path = malloc(strlen(name) + 1);
-    if (path == NULL)
-    {
-        printf("[mfs.c -- fs_opendir] malloc path failed\n");
-        return NULL;
-    }
 
-    strcpy(path, name);
-    directories = getDirByPath(path);
-
-    // set the entry index to 0 for fs_readDir() works
-    openedDirEntryIndex = 0;
-
-    free(path);
-    path = NULL;
-    return directories;
-}
 
 // Interface to read a buffer
 
