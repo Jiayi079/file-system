@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "b_io.h"
-#include "fsDir.c"
+#include "mfs.h"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
@@ -28,6 +28,8 @@
 typedef struct b_fcb
 	{
 	/** TODO add al the information you need in the file control block **/
+
+	Directory_Entry * file;
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer -- LBA used
 	int buflen;		//holds how many valid bytes are in the buffer
@@ -300,27 +302,35 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		return (-1); 					//invalid file descriptor
 		}
 		
-		//Using the file system's file descriptor, check if file is 
-		//open, if not, print error message 
-		if(fcbArray[fd].fs_FD == -1){
+	//If offset position is at the beginning, then
+	//set position of offset to the beginning of file
+		if (whence & SEEK_SET)
+	{
 
-			printf("The file has not been opened yet/n");
-			return -1;
-		}
+		fcbArray[fd].index = offset;
 
-		//Checks the file permissions, if the file is not set to read
-		//and write only, print error message 
-		if(!fcbArray[fd].b_flags & O_WRONLY || !fcbArray[fd].b_flags & O_RDWR){
+	}
 
-			printf("The file cannot be accessed due to R&W permissions\n");
-			return -1;
+	//If offset position is at the current position, then
+	//set position of offset to the curent pointer of the file
+	if (whence & SEEK_CUR)
+	{
 
-		}
+		fcbArray[fd].index += offset;
 
-	//Change where we are in the file by incrementing the offset
-	fcbArray[fd].b_offset += offset;
-		
-	return (fcbArray[fd].index); //Return the current position in the buffer
+	}
+
+	//If offset position is at the end, then
+	//this means we are the end of file
+	if (whence & SEEK_END)
+	{
+	
+		fcbArray[fd].index = fcbArray[fd].file -> fileSize / B_CHUNK_SIZE;
+
+	}
+
+	//Return the current file position in our buffer 
+	return (fcbArray[fd].index); 
 }
 
 
