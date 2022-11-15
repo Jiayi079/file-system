@@ -45,8 +45,7 @@ typedef u_int32_t uint32_t;
 #define DIR_TYPE 0
 #define FILE_TYPE 1
 
-#define Delim "/"
- #define MAX_PATHSIZE 255 //Max path size of any given file (255 bytes)
+#define MAX_PATHSIZE 255 //Max path size of any given file (255 bytes)
 
 
 // This structure is returned by fs_readdir to provide the caller with information
@@ -135,7 +134,8 @@ typedef struct VCB{
 
 
 //VCB related functions
-unsigned int getVCB_BlockCount(uint64_t);
+unsigned int getVCB_BlockCount(uint64_t)
+unsigned int getVCB_num_bytes(uint64_t)
 fdDir * parse_DirectoryPath(char *);
 
 //DIR relate functions
