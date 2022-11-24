@@ -250,48 +250,72 @@ fdDir * parseEntry(struct Directory_Entry *entry)
 }
 
 
-//Function to get directory path by using the last "/" as parameter 
-char * get_path_last_slash(char * path){
-    //to find the last slash in the path using strrchr()
+//Function to get the full pathname before the last "/"
+//of the current directory 
+char * get_path_last_slash(char * path)
+{
+    //To find the last slash in the pure_PathCopy, we used strrchr()
     char slash = '/';
-    char * last_slash = strrchr(path, slash);
-    
+    char *last_slash = strrchr(path, slash);
+
     int cut_index = last_slash - path;
 
-    if(last_slash == NULL){
+    //If there is nothing found after the last slash
+    //then set the splice_index to 0
+    if (last_slash == NULL)
+    {
         cut_index = 0;
     }
 
-    ldprintf("cut Index: %d", cut_index);
+    //Display the index of where the path was spliced
+    // printf("Path spliced at index: %d\n", cut_index);
 
-    // start prepare the new ptr to replace and return
-    char * path_before_last_slash = malloc(cut_index + 1);
-    if(path_before_last_slash == NULL){
-        printf("malloc path_before_last_slash failed!\n");
+    //Malloc a path copy before the last slash into memory
+    char *path_before_last_slash = malloc(cut_index + 1);
+
+    if (path_before_last_slash == NULL)
+    {
+        printf("Failed to malloc path_before_last_slash\n");
         return NULL;
     }
 
-    char * left_path = malloc(strlen(path) - cut_index);
+    //Malloc a path copy before the splice index (lefthalf) 
+    //into memory
+    char *left_path = malloc(strlen(path) - cut_index);
 
-    if(path_before_last_slash == NULL){
-        printf("malloc left_path failed!\n");
+    if (path_before_last_slash == NULL)
+    {
+        printf("Failed to malloc lefthalf_Path\n");
         return NULL;
     }
 
-    if(last_slash != NULL){
+    //While the directory at the last slash is not empty (NULL),
+    //copy the path from the splice index and lefthalf,
+    //into our pure_PathCopy buffer
+    if (last_slash != NULL)
+    {
+
         strncpy(path_before_last_slash, path, cut_index);
-        path_before_last_slash[cut_index] ='\0';
+        path_before_last_slash[cut_index] = '\0';
         strcpy(left_path, last_slash + 1);
-    }else{
+
+    }
+
+    else
+
+    {
+        //If the directory is empty, then set it as root 
         strcpy(path_before_last_slash, ".");
         strcpy(left_path, path);
+
     }
 
-    // put the path back to the original path
+    //Copy the path from path_before_last_slash back into the original pure_PathCopy
     strcpy(path, path_before_last_slash);
 
-    printf("path before last slash is %s", path);
-    printf("the left path is %s\n", left_path);
+    //Display the path before and after the slash
+    // printf("pure_PathCopy before last slash is: %s\n", path);
+    // printf("The lefthalf pure_PathCopy is: %s\n", left_path);
 
     return left_path;
 }
@@ -442,18 +466,26 @@ fdDir * fs_opendir(const char *name)
 }
 
 
-//to read the dirEntry list
-struct fs_diriteminfo *fs_readdir(fdDir *dirp){
+//Function to read the directory entries list
+struct fs_diriteminfo *fs_readdir(fdDir *dirp)
+{
+    //Set the current dir entry index to the amount of 
+    //currently opened dir entries 
     int check_de_index = openedDirEntryIndex;
-    while(check_de_index < MAX_ENTRIES_NUMBER){
-        if(dirp->dirEntry[check_de_index].isFreeOrUsed == SPACE_IN_USED){
+
+    //While the current index is less than max num entries,
+    //set each entry with an index number 
+    while (check_de_index < MAX_ENTRIES_NUMBER)
+    {
+        if (dirp->dirEntry[check_de_index].dirUsed == SPACE_IN_USED)
+        {
             openedDirEntryIndex = check_de_index + 1;
             return dirp->dirEntry + check_de_index;
         }
         check_de_index++;
     }
+    //If there are no more entries to index, then return NULL
     return NULL;
-
 }
 
 // to close the directory and free the memory we have allocated
@@ -522,27 +554,31 @@ int fs_isFile(char *path)
     return result;
 }
 
-// to load the status of the file in the opened directory
+//Funcion to load the status of a file in the opened directory
 int fs_stat(const char *path, struct fs_stat *buf)
 {
-    // because it is utilizing an existing directory, it shouldn't fail.
+    //In this loop, first check if the current directory entry is marked used
+    //and if that specific directory exsits
     for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
     {
-        // check if the driectories's location is used
-        if (directories->dirEntry[i].isFreeOrUsed == 1 &&
-        // also check if the directory is what we are looking for
-            strcmp(directories->dirEntry[i].d_name, path) == 0)
+        if (rootDir->dirEntry[i].dirUsed == SPACE_IN_USED &&
+            strcmp(rootDir->dirEntry[i].file_name, path) == 0)
         {
-            // set up the data to fs_stat struct
+            //If specified directory exists, then set the 
+            //file data into our fs_stat struct 
             buf->st_blksize = JCJC_VCB->blockSize;
-            buf->st_size = directories->dirEntry[i].fileSize;
-            buf->st_blocks = getBlockCount(buf->st_size);
+            buf->st_size = rootDir->dirEntry[i].fileSize;
+            buf->st_blocks = getVCB_BlockCount(buf->st_size);
+            buf->st_createtime = rootDir->dirEntry[i].create_time;
+            buf->st_accesstime = rootDir->dirEntry[i].last_access_time;
+            buf->st_modtime = rootDir->dirEntry[i].modified_time;
             // when we finish setting up the data, finish this function
             return 0;
         }
     }
 
-    // return -1 if only if didn't find the path or if the directory all full
+    // return -1 if it didn't find the directory in pure_PathCopy 
+    //or if the directory is already full
     return -1;
 }
 
