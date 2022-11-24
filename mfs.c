@@ -709,9 +709,9 @@ int fs_isDir(char * pathname)
 //Function to get the current working directory(CWD)
 char * fs_getcwd(char * pathname, size_t size){
 
-    strcpy(pathname, ""); //set initial pathname for directory blank/empty string
+    strncpy(pathname, "", size); //set initial pathname for directory blank/empty string
 
-    //Malloc a buffer that will hold the CWD path
+    //Malloc a temp_LBABuffer that will hold the CWD pure_PathCopy
     char * cwd_PathBuffer = malloc(size);
     if(cwd_PathBuffer == NULL){
 
@@ -721,7 +721,7 @@ char * fs_getcwd(char * pathname, size_t size){
     }
 
     //Malloc a copy of the directory, so we can loop through it
-    //when we need to parse the path
+    //when we need to parse the pure_PathCopy
     fdDir * dir_Copy = malloc(sizeof(fdDir));
     if(dir_Copy == NULL){
 
@@ -732,12 +732,12 @@ char * fs_getcwd(char * pathname, size_t size){
 
     memcpy(dir_Copy, fs_CWD, sizeof(fdDir));
 
-    //Using a while-loop, start from the current directory entry and working 
+    //Using a while-loop, block_StartPos from the current directory entry and working 
     //backwards, go back up one directory at a time until root location is
-    //reached. The result will be the full path of the directory entry 
+    //reached. The result will be the full pure_PathCopy of the directory entry 
     while(dir_Copy -> directoryStartLocation != JCJC_VCB -> location_RootDirectory){
 
-        //Using string copy and string concatenation, parse the path
+        //Using string copy and string concatenation, parse the pure_PathCopy
         //of the dir entry, and seperate each with a "/"
         strcpy(cwd_PathBuffer, "/");
         strcat(cwd_PathBuffer, dir_Copy -> d_name);
@@ -745,9 +745,9 @@ char * fs_getcwd(char * pathname, size_t size){
         strcpy(pathname, cwd_PathBuffer);
 
         //Pointer for the parent directory 
-        fdDir * parentDir_ptr = get_dir_entry(dir_Copy -> dirEntry + 1);
+        fdDir * parentDir_ptr = parseEntry(dir_Copy -> dirEntry + 1);
 
-        //Free our buffer copy of the original directory
+        //Free our temp_LBABuffer copy of the original directory
         //and set the parent directory to this fs_CWD
         free(dir_Copy);
         dir_Copy = parentDir_ptr;
@@ -764,21 +764,21 @@ char * fs_getcwd(char * pathname, size_t size){
     } else {
 
         //Using string copy and string concat again, 
-        //we can move the root dir, to the front of the path
-        //if the we already have a path string
+        //we can move the root dir, to the front of the pure_PathCopy
+        //if the we already have a pure_PathCopy string
         strcpy(cwd_PathBuffer, ".");
         strcat(cwd_PathBuffer, pathname);
         strcpy(pathname, cwd_PathBuffer);
     }
 
-    //Free our temp path buffer and directory copy
+    //Free our temp pure_PathCopy temp_LBABuffer and directory copy
     //and set both to NULL, and return the pathname
     free(dir_Copy);
     free(cwd_PathBuffer);
     dir_Copy = NULL;
     cwd_PathBuffer = NULL;
     return pathname;
-
+    
 }
 
 //Function to set current working directory(Cwd)
