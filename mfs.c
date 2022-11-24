@@ -617,116 +617,7 @@ int fs_isDir(char * pathname){
     return result;
 }
 
-/*******************************************************************/
 
-//Function to parse pathname of a directory from a specifc entry
-// fdDir * parse_DirectoryEntry(struct fs_diriteminfo * dir_entry){
-
-//     //Check if passed-in directory entry is     
-//     //of type Directory, if not, print error
-//     if (dir_entry -> fileType != DIR_TYPE){
-
-//         printf("Dir entry is not of type Directory\n");
-//         return NULL;
-//     }
-
-//     //Get the block count of this directory entry, and by 
-//     //using the sizeOf, malloc a temp buffer for entry
-//     unsigned int fd_DirBlockCount = getVCB_BlockCount(sizeof(fdDir));
-//     char * de_Buffer = malloc(fd_DirBlockCount * JCJC_VCB -> blockSize);
-
-//     if(de_Buffer == NULL){
-
-//         printf("Failed to malloc Directory Entry Buffer\n");
-//         return NULL;
-//     }
-
-    //Malloc a directory pointer that will contain the relative 
-    //pathname for the passed in directory entry
-//     fdDir * relative_Pathname = malloc(sizeof(fdDir));
-
-//     if(relative_Pathname == NULL){
-
-//         printf("Failed to malloc relative_Pathname\n");
-//         return NULL;
-
-//     }
-
-//     //Using LBAread, update the directory entry start location
-//     //and copy the path from de_Buffer to our relative pathname pointer
-//     LBAread(de_Buffer, fd_DirBlockCount, dir_entry -> entry_StartLocation);
-//     memcpy(relative_Pathname, de_Buffer, sizeof(fdDir));
-
-
-//     return relative_Pathname;
-// }
-
-// fdDir * parse_DirectoryPath(char * DE_pathname){
-
-//     //Malloc a pointer for the absolute path for 
-//     //a directory in current working directory (CWD)
-//     fdDir * absolute_DirPath = malloc(sizeof(fdDir));
-//     if(absolute_DirPath == NULL){
-
-//         printf("Failed to malloc absolute_DirPath\n");
-//         return -1;
-
-//     }
-
-//     //Copy the current fs_CWD of the file system
-//     memcpy(absolute_DirPath, fs_CWD, sizeof(fdDir));
-
-//     //Make a pure copy of the DE_pathname, so that the 
-//     //original pathname will not be modified
-//     char * pure_DirPathCopy = malloc(strlen(DE_pathname) + 1);
-//     if(pure_DirPathCopy == NULL){
-
-//         printf("Failed to malloc pure_DirPathCopy");
-//         return -1;
-
-//     }
-
-//     strcpy(pure_DirPathCopy, DE_pathname);
-
-    //We will use the delimeter "/", to split the strings
-    //and represent new directories with the delim as well
-    // char * path_Token = strtok(pure_DirPathCopy, ;
-
-    // while(path_Token != NULL){
-
-    //     //Check if current path_Token is not root "." or not empty ""
-    //     if(strcmp(path_Token, ".") != 0 || strcmp(path_Token, "") != 0){
-
-    //             //Loop through the directory entries in dir_DE_count
-    //             //and check if any of the dir entries matches with the 
-    //             //string tokens from strtok()
-    //            for(int i = 1; i < MAX_DE; i++){
-
-                //We need to make sure that each dir entry is allocated 
-                //in a used space in the bitmap, as well as of type directory
-                //and the entry must have a matching name
-    //             if(absolute_DirPath -> dirEntry[i].isFreeOrUsed == SPACE_IN_USED &&
-    //                 absolute_DirPath -> dirEntry[i].fileType == DIR_TYPE &&
-    //                 strcmp(absolute_DirPath -> dirEntry[i].d_name, path_Token) == 0){
-
-    //                 //Free the pointer buffer and parse the directory entry's full
-    //                 //pathname by calling the parse_DirectoryEntry function
-    //                 free(absolute_DirPath);
-    //                 absolute_DirPath = parse_DirectoryEntry(absolute_DirPath -> dirEntry + 1);
-    //                 break;
-
-    //                 }
-    //             }
-
-    //     } 
-    //         //After parsing, set the path_Token to NULL with the delim
-    //         //to indicate end of string/path
-    //         path_Token = strtok(NULL, Delim);
-         
-    //     }
-    //         return absolute_DirPath;
-
-    // }
     
 
 //Function to get the current working directory(CWD)
@@ -853,4 +744,68 @@ unsigned int getVCB_num_bytes(uint64_t block_count)
     return result;
 }
 
+
+// delete the file
+int fs_delete(char* filename)
+{
+    char *pathExculdeLastSlash = malloc(strlen(filename) + 1);
+    if (pathExculdeLastSlash != NULL)
+    {
+        strcpy(pathExculdeLastSlash, filename);
+    }
+    else
+    {
+        printf("[mfs.c -- fs_delete] malloc pathExculdeLastSlash failed\n");
+        return -1;
+    }
+
+    char *getFileName = get_path_last_slash(pathExculdeLastSlash);
+
+    // find the directory that is expected for holding that file
+    fdDir *parent = parsePath(pathExculdeLastSlash);
+
+    // find the file starting location to delete
+    uint64_t start = -1;
+    uint64_t size = -1;
+    for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+    {
+        // printf("parent->dirEntry[i].file_name = %s\n", parent->dirEntry[i].file_name);
+        // printf("parent->dirEntry[i].fileType = %d\n", parent->dirEntry[i].fileType);
+        if (parent->dirEntry[i].dirUsed == SPACE_IN_USED &&
+            parent->dirEntry[i].fileType == FILE_TYPE &&
+            strcmp(parent->dirEntry[i].file_name, getFileName) == 0)
+        {
+            start = parent->dirEntry[i].dir_Location;
+            // printf("parent->dirEntry[i].dir_Location = %d\n", parent->dirEntry[i].dir_Location);
+            size = parent->dirEntry[i].fileSize;
+            parent->dirEntry[i].dirUsed = SPACE_IS_FREE;
+            parent->dirEntryPosition--;
+            LBAwrtie_func(parent, parent->d_reclen,
+                             parent->directoryStartLocation);
+
+            // read the data again if it is updating cwd
+            if (fs_CWD != NULL && parent->directoryStartLocation == fs_CWD->directoryStartLocation)
+            {
+                memcpy(fs_CWD, parent, sizeof(fdDir));
+            }
+            break;
+        }
+    }
+
+    // release the blocks occupied by the directory
+    if (releaseFreespace(start, getVCB_BlockCount(size)) != 0)
+    {
+        printf("releaseFreespace() falied in fs_delete\n");
+        return -1;
+    }
+
+    printf("%s : %s was removed\n", filename, getFileName);
+
+    free(pathExculdeLastSlash);
+    free(getFileName);
+    pathExculdeLastSlash = NULL;
+    getFileName = NULL;
+    // fs_rmdir(filename);
+    return 0;
+}
 

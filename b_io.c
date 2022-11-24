@@ -420,19 +420,97 @@ int b_write (b_io_fd fd, char * buffer, int count)
 //  |             |                                                |        |
 //  | Part1       |  Part 2                                        | Part3  |
 //  +-------------+------------------------------------------------+--------+
-int b_read (b_io_fd fd, char * buffer, int count)
-	{
+int b_read(b_io_fd fd, char * buffer, int count)
+{
+	if (startup == 0)
+		b_init(); // Initialize our system
 
-	if (startup == 0) b_init();  //Initialize our system
+	if ((fd < 0) || (fd >= MAXFCBS) || fcbArray[fd].fs_FD == -1 || count < 0)
+	{
+		printf("[b_io -- b_read] conidtion error\n");
+		return (-1); 					//invalid file descriptor
+	}
 
 	// check that fd is between 0 and (MAXFCBS-1)
-	if ((fd < 0) || (fd >= MAXFCBS))
+	// also check if the fd value in the fcbArray is not -1 and the count is not less than 0
+	if (fcbArray[fd].b_flags == 0)
+	{
+		fcbArray[fd].b_flags = 1; // set become 1 means read, and 2 means write
+		int indexHolder = -1;
+		for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
 		{
-		return (-1); 					//invalid file descriptor
+			// check if it's parent directory is used
+			// check if the parent directory's file type is file nor dir
+			// check if the parent name is the same as the file name we have in the fileName
+			// condition should be all checked to make sure we are on the right track
+			if (fcbArray[fd].parent->dirEntry[i].dirUsed == SPACE_IN_USED &&
+				fcbArray[fd].parent->dirEntry[i].fileType == FILE_TYPE &&
+				strcmp(fcbArray[fd].parent->dirEntry[i].file_name, fcbArray[fd].fileName) == 0)
+			{
+				indexHolder = i; // keep i's value used later to check
+				// set up the buffer length become the exactly dirEntry's file size
+				fcbArray[fd].buflen = fcbArray[fd].parent->dirEntry[i].fileSize;
+				// get the total block count we need
+				// and we have to set up the b_io buffer size, and vcb same avoid the error
+				int blockCount = getVCB_BlockCount(fcbArray[fd].buflen);
+				fcbArray[fd].buf = malloc(blockCount * B_CHUNK_SIZE);
+
+				// check if the buff malloc is successful
+				if (fcbArray[fd].buf == NULL)
+				{
+					printf("[b_io.c -- b_read] fcbArray[fd].buf malloc failed\n");
+					fcbArray[fd].fs_FD = -2;
+					return -1;
+				}
+
+				// read data into our fcbArray[fd].buf by using LBAread
+				LBAread(fcbArray[fd].buf, blockCount, fcbArray[fd].parent->dirEntry[i].dir_Location);
+
+				// after we finish the read data, we simply break out of the loop
+				break;
+			}
 		}
-		
-	return (0);	//Change this
+
+		// handle error of not find files
+		if (indexHolder == MAX_ENTRIES_NUMBER)
+		{
+			printf("[b_io.c -- b_read] indexHolder is out of range\n");
+			return -1;
+		}
 	}
+
+	// check if the b_flags is set to become 1 -> READ
+	if (fcbArray[fd].b_flags != 1)
+	{
+		printf("[b_io.c -- b_read] fcbArray[fd].b_flags is not set up to READ -> 1\n");
+		return -1;
+	}
+
+	int readed = 0; // hold the number of bytes readed into the buffer
+	uint64_t remain = fcbArray[fd].buflen - fcbArray[fd].index;
+
+	// check remain is bigger than 0
+	// which means we still need read data
+	if (remain > 0)
+	{
+		if (remain < count) // if true, means this is the last time of read
+		{
+			readed = remain; // store the number of bytes remainning into the readed
+		}
+		else // if false, means we have to keep offset and run read function again
+		{
+			readed = count;
+		}
+
+		// copy the number of readed data into the buffer at this time
+		memcpy(buffer, fcbArray[fd].buf + fcbArray[fd].index, readed);
+
+		// update the index location since we may run b_read function again
+		fcbArray[fd].index += readed;
+	}
+
+	return readed; // return the number of bytes readed
+}
 	
 //Interface to Close the file	
 int b_close (b_io_fd fd)
