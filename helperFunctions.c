@@ -21,6 +21,18 @@
 // Variables for allocating space in bitmap
 uint64_t targetIndex = 0, targetBit = 0;
 
+// Function to check the bits stored in our bitmap
+int checkBit(uint64_t indexOfBlock, int *bitmap)
+{
+    //By dividing the block index by the size of 8 bits (= 1 byte),
+    //init the starting bit index and bit position to check
+    targetIndex = indexOfBlock / (sizeof(int) * 8);
+    targetBit = indexOfBlock % (sizeof(int) * 8);
+
+    //Checks if the current bit is marked as free or used 
+    return (bitmap[targetIndex] & (SPACE_IN_USED << targetBit)) != SPACE_IS_FREE; // 0 -> false
+}
+
 // //Function to get the block count in the VCB
 // unsigned int getVCB_BlockCount(uint64_t bl_number)
 // {
@@ -48,8 +60,6 @@ uint64_t targetIndex = 0, targetBit = 0;
 // int allocateFreeSpace_Bitmap(int block_count_needed);
 
 // unsigned int getVCB_num_bytes(uint64_t block_count);
-
-// int checkBit(uint64_t block_index, int * freespace);
 
 // void setBitUsed(uint64_t block_index, int * freespace);
 
