@@ -214,6 +214,153 @@ int fs_mkdir(const char *pathname, mode_t mode)
     return 0;
 }
 
+int fs_rmdir(const char * pathname)
+{
+    // finding the directory by using pathname
+    char *path = malloc(strlen(pathname) + 1);
+    if (path != NULL)
+    {
+        strcpy(path, pathname);
+    }
+    else
+    {
+        printf("[mfs.c -- fs_rmdir] malloc path failed\n");
+        return -1;
+    }
+
+    // get the directory full path
+    fdDir * target = parsePath(path);
+
+    // we'll never used path variable later
+    // set allocate be free and NULL in case of error
+    free(path);
+    path = NULL;
+
+    // check if the path we find is the root directory
+    if (target->directoryStartLocation == JCJC_VCB->location_RootDirectory)
+    {
+        // if it is the root directory
+        // we can not remove the root directory
+        printf("root can't be removed\n");
+
+        // allocate free in case of error
+        free(target);
+        target = NULL;
+        return -1; // ending this functon since the pathname is the root directory
+    }
+
+    // get the parent's directory entry
+    // by using to remove the directory in the parent
+    fdDir *parent = parseEntry(target->dirEntry + 1);
+    if (parent == NULL)
+    {
+        printf("[mfs.c -- fs_rmdir] parseEntry() on parent failed\n");
+        return -1;
+    }
+
+    // we have to remove the directories both "." and ".."
+    // since "." refers to this deleted file and ".." refers to its parent directory
+    if (target->dirEntryPosition > 2)
+    {
+        // so we need to check if the target's directory entry count is greater than the 2
+        // which is inlcude "." and ".."
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+        {
+            // check if the directory entry is used
+            // whcih means that we find the directory
+            if (target->dirEntry[i].dirUsed == SPACE_IN_USED)
+            {
+                // since pathname and d_name will having slash to separate each other
+                // we have to add 2 to malloc the size of this tempPath
+                char *tempPath = malloc(strlen(pathname) + strlen(target->dirEntry[i].file_name) + 2);
+                if (tempPath != NULL)
+                {
+                    // copy the pathname and the d_name to the tempPath
+                    // also need to add slash to separate them
+                    strcpy(tempPath, pathname);
+                    strcat(tempPath, "/");
+                    strcat(tempPath, target->dirEntry[i].file_name);
+                }
+                else
+                {
+                    // mallocate failed
+                    printf("[mfs.c -- fs_rmdir]malloc tempPath failed\n");
+                    return -1;
+                }
+
+                // check if tempPath present to dir
+                if (fs_isDir(tempPath))
+                {
+                    // remove dir by using fs_rmdir
+                    if (fs_rmdir(tempPath) != 0)
+                    {
+                        printf("fs_rmdir()");
+                        return -1;
+                    }
+                }
+
+                // check if tempPath present to file
+                if (fs_isFile(tempPath))
+                {
+                    // remove file by using fs_delete
+                    if (fs_delete(tempPath) != 0)
+                    {
+                        return -1;
+                    }
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+        }
+    }
+
+    // check if the directory is going to be deleted, redirect cwd to the parent
+    if (target->directoryStartLocation == fs_CWD->directoryStartLocation)
+    {
+        printf("redirecting to parent while cwd is being removed\n");
+        fs_setcwd("..");
+    }
+
+    // after delte the file/path, also need to set the parent directory become free
+    for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+    {
+        // finding the correct directory
+        if (parent->dirEntry[i].dirUsed == SPACE_IN_USED &&
+            parent->dirEntry[i].fileType == DIR_TYPE &&
+            strcmp(parent->dirEntry[i].file_name, target->d_name) == 0)
+        {
+            parent->dirEntry[i].dirUsed = SPACE_IS_FREE;
+            parent->dirEntryPosition--;
+            LBAwrtie_func(parent, parent->d_reclen,
+                             parent->directoryStartLocation);
+
+            // read the data again if it is updating cwd
+            if (fs_CWD != NULL && parent->directoryStartLocation == fs_CWD->directoryStartLocation)
+            {
+                memcpy(fs_CWD, parent, sizeof(fdDir));
+            }
+            break;
+        }
+    }
+
+    // releasing the directory's block-occupied space
+    if (releaseFreespace(target->directoryStartLocation, getVCB_BlockCount(target->d_reclen)) != 0)
+    {
+        printf("releaseFreespace() falied in rmdir\n");
+        return -1;
+    }
+
+    printf("%s : %s was removed\n", pathname, target->d_name);
+
+    free(target);
+    free(parent);
+    target = NULL;
+    parent = NULL;
+
+    return 0;
+}
 
 //Function to parse pathname of a directory from a specifc entry
 fdDir * parseEntry(struct Directory_Entry *entry)
