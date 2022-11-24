@@ -269,74 +269,27 @@ int init_freeSpace()
 
 int init__RootDir()
 {
-	fdDir * rootDir;
-	// NULL, "/"
+	// enter NULL to serve as the root directory
+	fdDir *rootDir;
 	rootDir = malloc(sizeof(fdDir));
 
 	if (rootDir == NULL)
-    {
+	{
 		printf("[fsInit.c -- init__RootDir] malloc rootDir failed\n");
 		return -1;
 	}
 
-	// set all rootDir become free space
-	memset(rootDir, 0, sizeof(fdDir));
+	// write the directory file psycially
+	LBAwrtie_func(rootDir, rootDir->d_reclen, rootDir->directoryStartLocation);
 
-	int dirBlockCount = getVCB_BlockCount(sizeof(fdDir));
-
-	int freeSpace_available = allocateFreeSpace_Bitmap(dirBlockCount);
-
-	if (freeSpace_available <= 0)
-	{
-		printf("[fsInit.c -- init__RootDir] no enough free space\n");
-		return -1;
-	}
-
-	rootDir->directoryStartLocation = freeSpace_available;
-	rootDir->d_reclen = sizeof(fdDir);
-	rootDir->dirEntryCount = 2;
-
-	strcpy(rootDir->d_name, "/");
-
-	// initialize current directory entry .
-    strcpy(rootDir->dirEntry[0].d_name, ".");
-    rootDir->dirEntry[0].fileType = 0;		// set -> dir
-    rootDir->dirEntry[0].isFreeOrUsed = 1; 	// set used
-    rootDir->dirEntry[0].entry_StartLocation = freeSpace_available;
-    rootDir->dirEntry[0].d_reclen = sizeof(struct fs_diriteminfo);
-    rootDir->dirEntry[0].fileSize = sizeof(fdDir);
-
-	// initialized root directory
-	memcpy(rootDir->dirEntry + 1, rootDir->dirEntry, sizeof(struct fs_diriteminfo));
-
-	// the first directory need to be named ".."
-	strcpy(rootDir->dirEntry[1].d_name, "..");
-
-	// loop through the rest of entries to mark them as free
-    for (int i = 2; i < 8; i++)
-    {
-        rootDir->dirEntry[i].isFreeOrUsed = 0;
-    }
-
-	// check if the rootDir initialized successfully
-	if (rootDir == NULL)
-	{
-		printf("[fsInit.c -- init__RootDir] rootDir init failed\n");
-		return -1;
-	}
-
-	// set up the directory file
-	int writebyLBA = updateByLBAwrite(rootDir, rootDir->d_reclen, rootDir->directoryStartLocation);
-
-	// TODO: comment later to check if it works
-	if (fs_CWD != NULL && rootDir->directoryStartLocation == rootDir->directoryStartLocation)
+    // read the data again if it is updating cwd
+    if (fs_CWD != NULL && rootDir->directoryStartLocation == fs_CWD->directoryStartLocation)
     {
         memcpy(fs_CWD, rootDir, sizeof(fdDir));
     }
 
+	// set the root directory as cwd
 	fs_CWD = rootDir;
 	JCJC_VCB->location_RootDirectory = fs_CWD->directoryStartLocation;
-
-
 	return 0;
 }
