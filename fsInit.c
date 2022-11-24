@@ -32,8 +32,6 @@
 
 // int dir_DE_count = 50; //set 50 for now as an example
 
-
-
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -191,32 +189,30 @@ void exitFileSystem ()
 //Initializing the VCB
 int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB)
 {
-
-	//Using memset(), initialize a block of memory for our VCB, with value 0
-	//based on the size of our VCB
+	// Using memset(), initialize a block of memory for our VCB, with value 0
+	// based on the size of our VCB
 	memset(JCJC_VCB, 0, sizeof(volume_ControlBlock));
 
-	//Initialize our VCB with these deault values 
-	JCJC_VCB -> numberOfBlocks = numberOfBlocks;
-	JCJC_VCB -> blockSize = blockSize;
-	JCJC_VCB -> VCB_blockCount = blockCount_VCB; //Amount of blocks used by the VCB
-	JCJC_VCB -> current_FreeBlockIndex = 0;
-	JCJC_VCB -> magicNumber = Magic_Number;
-	JCJC_VCB -> first_freespace = 1;
+	// Initialize our VCB with these deault values
+	JCJC_VCB->magicNumber = Magic_Number;
+	JCJC_VCB->numberOfBlocks = numberOfBlocks;
+	JCJC_VCB->blockSize = blockSize;
+	JCJC_VCB->VCB_blockCount = blockCount_VCB; // Amount of blocks used by the VCB
+	JCJC_VCB->current_FreeBlockIndex = 0;
 	// *** TODO: need to add rootLocation, free_block_count, location_RootDirectory
 
 
-	//Since 1 byte consists of 8 bits, we need to find
-	//the number of bytes used for each block in the VCB
-	//then we can get the number of blocks needed for the initialized VCB
-	u_int64_t bytes_PerBlock = numberOfBlocks / 8;
-	if(numberOfBlocks % 8 > 0){
+	// Since 1 byte consists of 8 bits, we need to find
+	// the number of bytes used for each block in the VCB
+	// then we can get the number of blocks needed for the initialized VCB
+	uint64_t bytes_PerBlock = numberOfBlocks / 8; //2441 + 1 = 2442
+	if (numberOfBlocks % 8 > 0)
+	{
 		bytes_PerBlock++;
 	}
 
-	JCJC_VCB -> freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
+	JCJC_VCB->freeSpace_BlockCount = getVCB_BlockCount(bytes_PerBlock);
 	// printf("freespace_blockcount: %ld\n", JCJC_VCB->freeSpace_BlockCount);
-
 
 	return 0;
 
