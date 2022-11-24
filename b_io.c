@@ -509,14 +509,31 @@ int b_read(b_io_fd fd, char * buffer, int count)
 	return readed; // return the number of bytes readed
 }
 	
-//Interface to Close the file	
-int b_close (b_io_fd fd)
+// Interface to Close the file	
+// should close by using file descriptor and set the space become free
+int b_close(b_io_fd fd)
+{
+	// check for some error that return a invalid fd
+	// must handle memory leak above (no time to optimize better)
+	if (fcbArray[fd].fs_FD != -1 && fcbArray[fd].fs_FD != -2)
 	{
-	fcbArray[fd].fs_FD = -1; //close the file handle
-	free(fcbArray[fd].buf);	   //free the associated buffer
-	fcbArray[fd].buf = NULL;   //set it be null
-	fcbArray[fd].index = -1;
-	fcbArray[fd].b_flags = -1;
-	fcbArray[fd].buflen = 0; //holds how many valid bytes are in the buffer
-	fcbArray[fd].b_offset = 0; //holds the position of where we are in the file
+		// free all associated malloc() pointer
+		if (fcbArray[fd].buf != NULL)
+		{
+			free(fcbArray[fd].buf);
+			fcbArray[fd].buf = NULL;
+		}
+		if (fcbArray[fd].parent != NULL)
+		{
+			free(fcbArray[fd].parent);
+			fcbArray[fd].parent = NULL;
+		}
+		if (fcbArray[fd].fileName != NULL)
+		{
+			free(fcbArray[fd].fileName);
+			fcbArray[fd].fileName = NULL;
+		}
 	}
+	fcbArray[fd].fs_FD = -1;
+	return 0;
+}
