@@ -702,10 +702,7 @@ int fs_isDir(char * pathname)
     tempPtr = NULL;
     return result;
 }
-
-
     
-
 //Function to get the current working directory(CWD)
 char * fs_getcwd(char * pathname, size_t size){
 
@@ -778,7 +775,7 @@ char * fs_getcwd(char * pathname, size_t size){
     dir_Copy = NULL;
     cwd_PathBuffer = NULL;
     return pathname;
-    
+
 }
 
 //Function to set current working directory(Cwd)
@@ -787,27 +784,26 @@ int fs_setcwd(char * pathname){
     //Malloc a pointer to set the CWD to this one,
     //set_ToThisDir, then call parse_DirectoryPath
     //to parse the full pathname for this CWD
-    fdDir * set_ToThisDir = get_dir_path(pathname);
-
-    if(set_ToThisDir == NULL){
-
-        printf("Failed to malloc set_ToThisDir\n");
+    // printf("fs_setcwd get dir path: %s\n", pathname);
+    fdDir *nextDir = parsePath(pathname);
+    if (nextDir == NULL)
+    {
+        printf("Cannot get the file to set the cwd\n");
         return -1;
-
     }
 
     //Show the previous CWD
-    printf("The previous CWD was: %s\n", fs_CWD -> d_name);
+    // printf("previous fs_CWD: %s\n", fs_CWD->d_name);
 
     //Free the previous fs_CWD and set the pointer for fs_CWD
     //to this CWD, set_ToThisDir
     free(fs_CWD);
-    fs_CWD = set_ToThisDir;
+    fs_CWD = nextDir;
 
     //Show the new, current CWD
-    printf("The current CWD is now: %s\n", fs_CWD -> d_name);
+    // printf("current fs_CWD: %s\n", fs_CWD->d_name);
     return 0;
-
+    
 }
 
 //Function to get the block count currenlty stored in our VCB
