@@ -221,10 +221,9 @@ int init_VCB (uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VC
 
 }
 
-
-//init freespace
-int init_freeSpace(volume_ControlBlock * JCJC_VCB){
-
+// init freespace
+int init_freeSpace()
+{
 	uint64_t bits_in_block = 8 * JCJC_VCB->blockSize;
 	uint64_t block_count = JCJC_VCB->numberOfBlocks / bits_in_block;
 	if (JCJC_VCB->numberOfBlocks % bits_in_block != 0)
@@ -239,60 +238,15 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 	//init the bitmap array -> 5 blocks
 	freespace = malloc(block_count * JCJC_VCB->blockSize);
 
-	// JCJC_VCB->current_FreeBlockIndex = 0;
-
-	if(freespace == NULL){
-		printf("freespace malloc failed\n");
-		exit (-1);
-	}
-	// -----------------------------------------------------------------------
-
-	// printf("numberofblock: %d\n", JCJC_VCB->numberOfBlocks);
-	// printf("freespace size: %d\n", sizeof(freespace));
-	// check pointer is at least 2442 bytes
-	// if (freespace)
-
-	//0 -> free, 1 -> allocated
-	//Set the free space array total as the numberOfBlocks(19531 bits)
-	// memset(freespace, 0, JCJC_VCB -> numberOfBlocks);
-
-	// 0 --> vcb  1-5 --> bitmap
-	// memset(freespace, 1, JCJC_VCB->VCB_blockCount + JCJC_VCB -> freeSpace_BlockCount);
-		// comment part
-	// --------------------------------------------------------------------
-
-
-
 	// [ 0 ][ 1 ][ 2 ][ 3 ][ 4 ][ 5 ][ 6 ]
 	// [VCB][FRE][FRE][FRE][FRE][FRE][   ]
-	// JCJC_VCB->numberOfBlocks / JCJC_VCB->blockSize;
-
-	JCJC_VCB->current_FreeBlockIndex += JCJC_VCB->VCB_blockCount + JCJC_VCB -> freeSpace_BlockCount;
-
-	// memset(freespace, 0, block_count * JCJC_VCB->blockSize * 8);
-	// memset(freespace, 1, JCJC_VCB->first_freespace + block_count);
-
-	for (int i = 0; i < JCJC_VCB->first_freespace + block_count; i++)
+	if (freespace != NULL)
 	{
-		setBitUsed(i, freespace);
+		memset(freespace, 0, JCJC_VCB->numberOfBlocks);
 	}
-
-
-
-	for (int i = JCJC_VCB->first_freespace + block_count; i < block_count * JCJC_VCB->blockSize; i++)
-	{
-		setBitFree(i, freespace);
-	}
-
-	// printf("[debug]initial freespace\n");
-
-	//Write 5 blocks starting from block 1 
-	int LBAwrite_return = LBAwrite(freespace, block_count, 1);
-
-
-	if (LBAwrite_return != block_count)
-	{
-		printf("LBAwrite failed!\n");
+	else{
+		printf("freespace malloc failed\n");
+		return -1;
 	}
 
 	// printf("[debug]current_freeblockIndex: %ld\n", JCJC_VCB->current_FreeBlockIndex);
@@ -301,8 +255,14 @@ int init_freeSpace(volume_ControlBlock * JCJC_VCB){
 	// freespace = NULL;
 
 	// Set current block as" used" in the free space
-	// and update it to the VCB 
-	return JCJC_VCB->first_freespace + block_count;
+	// and update it to the VCB
+
+	// set the bitmap and the currently-used block that are being used by VCB.
+	int i = allocateFreeSpace_Bitmap(JCJC_VCB->freeSpace_BlockCount + JCJC_VCB->VCB_blockCount);
+
+	// printf("debug 2\n");
+	// printf("allocated free space: %d\n", i);
+	return i;
 }
 
 
