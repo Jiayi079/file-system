@@ -214,42 +214,39 @@ int fs_mkdir(const char *pathname, mode_t mode)
 }
 
 
-//Function to get directory path by directory entry 
-fdDir * get_dir_entry(struct fs_diriteminfo * entry){
-
-    if(entry -> fileType != DIR_TYPE){
-
+//Function to parse pathname of a directory from a specifc entry
+fdDir * parseEntry(struct Directory_Entry *entry)
+{
+    //Check if passed-in directory entry is     
+    //of type Directory, if not, print error
+    if (entry->fileType != DIR_TYPE)
+    {
         return NULL;
     }
 
-    //set a buffer to read the directory entry using LBAread()
-    int fdDir_size = sizeof(fdDir);
-    uint64_t fdDir_block_count = getBlockCount(fdDir_size);
-    char * read_buffer = malloc(fdDir_block_count * JCJC_VCB->blockSize);
-
-    if(read_buffer != NULL){
-
-        LBAread(read_buffer, fdDir_block_count, entry->entry_StartLocation);
-
-    }else{
-
-        printf("malloc read_buffer failed!\n");
+    //Get the block num_BlocksToRelease of this directory entry, and by 
+    //using the sizeOf, malloc a temp temp_LBABuffer for entry
+    unsigned int fdDir_block_count = getVCB_BlockCount(sizeof(fdDir));
+    char *buffer = malloc(fdDir_block_count * JCJC_VCB->blockSize);
+    if (buffer == NULL)
+    {
+        printf("malloc() on buffer");
         return NULL;
     }
 
-    fdDir * ret_dir = malloc(fdDir_size);
-
-    if(ret_dir != NULL){
-
-        memcpy(ret_dir, read_buffer, fdDir_size);
-
-    }else{
-
-        printf("malloc ret_dir failed!\n");
+    fdDir *tempDir = malloc(sizeof(fdDir));
+    if (tempDir == NULL)
+    {
+        printf("malloc() on tempDir");
         return NULL;
     }
 
-    return ret_dir;
+    //Using LBAread, update the directory entry block_StartPos location
+    //and copy the pure_PathCopy from de_Buffer to our relative pathname pointer
+    LBAread(buffer, fdDir_block_count, entry->dir_Location);
+    memcpy(tempDir, buffer, sizeof(fdDir));
+
+    return tempDir;
 }
 
 
@@ -322,77 +319,103 @@ int updateByLBAwrite(void *fdDir, uint64_t length, uint64_t startingPosition)
     return 0;
 }
 
-//Function to get the directory's full path 
-fdDir * get_dir_path(char * name){
-
-    fdDir * get_dir = malloc(sizeof(fdDir));
+//Function to get the full pure_PathCopy of a directory 
+fdDir * parsePath(char *name)
+{
+    //Malloc a pointer for the absolute pure_PathCopy for 
+    //a directory in current working directory (CWD)
+    // printf("name: %s\n", name);
     int fddir_size = sizeof(fdDir);
+    fdDir *absolute_DirPath = malloc(fddir_size);
 
-    if(get_dir != NULL){
-
-        memcpy(get_dir, fs_CWD, fddir_size);
-
-    }else{
-
-        printf("malloc get_dir failed!\n");
+    if (absolute_DirPath != NULL)
+    {
+        //Copy the current fs_CWD of the file system
+        memcpy(absolute_DirPath, fs_CWD, fddir_size);
+    }
+    else
+    {
+        printf("Failed to malloc absolute_DirPath\n");
         return NULL;
     }
 
-    // try to copy name to avoid modifying it using strtok()
-    char * copy_name = malloc(strlen(name) + 1);
+    //Make a pure copy of the DE_pathname, so that the 
+    //original pathname will not be modified
+    char * pure_DirPathCopy = malloc(strlen(name) + 1);
 
-    if(copy_name != NULL){
-
-        strcpy(copy_name, name);
-
-    }else{
-
-        printf("malloc copy_name failed!\n");
+    if (pure_DirPathCopy != NULL)
+    {
+        strcpy(pure_DirPathCopy, name);
+    }
+    else
+    {
+        printf("malloc pure_DirPathCopy failed!\n");
         return NULL;
     }
 
-    // then we will split the string by delimeter
-    char delimeter = "/";
-    char * token = strtok(copy_name, delimeter);
+    // We will use the delimeter "/", to split the strings
+    // and represent new directories with the delim as well
+    char * delimeter = "/";
+    char * token = strtok(pure_DirPathCopy, delimeter);
+
+    int j = 0;
+
+    while (token != NULL)
+    {
+        // printf("token: %s\n", token);
+        //Check if current path_Token is not root "." or not empty ""
+        if (strcmp(token, ".") != 0 || strcmp(token, "") != 0)
+        {
+            //Loop through the directory entries in dir_DE_count
+            //and check if any of the dir entries matches with the 
+            //string tokens from strtok()
 
 
-    //and we use a whild loop to check the whole list to find the directory
-    while(token != NULL){
-
-        //if token is "." or empty it will means this is our cur dir
-        //if not "." or empty it will keep finding the next
-        if(strcmp(token, ".") == 0 || strcmp(token, "") == 0){
-            
-            //Means we are already at the root directory, don't need to 
-            //parse anything
-        } else {
-
-            int i = 1;
-
-            for(int i = 1; i < MAX_ENTRIES_NUMBER; i++){
-                // to make sure is using space, a directory and name match
-
-                if(get_dir->dirEntry[i].isFreeOrUsed == SPACE_IN_USED &&
-                   get_dir->dirEntry[i].fileType == DIR_TYPE &&
-                   strcmp(get_dir->dirEntry[i].d_name, token) == 0)
-                   {
-                    
-                    free(get_dir);
-                    get_dir = get_dir_entry(get_dir->dirEntry + i);
+            for (int i = 1; i < MAX_ENTRIES_NUMBER; i++)
+            {
+                // if (absolute_DirPath->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                //     absolute_DirPath->dirEntry[i].fileType == FILE_TYPE &&
+                //     strcmp(absolute_DirPath->dirEntry[i].file_name, token) == 0)
+                // {
+                //     printf("Failed to find directory, since name is: %s\n", token);
+                //     break;
+                // }
+                // We need to make sure that each dir entry is allocated 
+                // in a used space in the bitmap, as well as of type directory
+                // and the entry must have a matching name
+                // printf("absolute_DirPath fileType: %d, file_name: %s\n", absolute_DirPath->dirEntry[i].fileType, 
+                //     absolute_DirPath->dirEntry[i].file_name);
+                if (absolute_DirPath->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                    // absolute_DirPath->dirEntry[i].fileType == DIR_TYPE &&
+                    strcmp(absolute_DirPath->dirEntry[i].file_name, token) == 0)
+                {
+                    printf("find: %s\n", absolute_DirPath->dirEntry[i].file_name);
+                    //Free the pointer temp_LBABuffer and parse the directory entry's full
+                    //pathname by calling the parse_DirectoryEntry function
+                    free(absolute_DirPath);
+                    absolute_DirPath = parseEntry(absolute_DirPath->dirEntry + i);
+                    j = i;
                     break;
-                   }
-                
+                }
+                // j = i;
             }
 
-            //if we didn't find the directory, that means we have fail to find
-            if(i == MAX_ENTRIES_NUMBER){
+            //If we looped through all the stored directories and did
+            //not find the specified directroty, then print error message
+            if (j == MAX_ENTRIES_NUMBER)
+            {
+                printf("Failed to find the specified directory\n");
                 return NULL;
             }
+            token = strtok(NULL, delimeter);
         }
-         token = strtok(NULL, delimeter);
-    }
+        else
+        {
+            token = strtok(NULL, delimeter);
+        }
+    }//End while loop
 
-    return get_dir;
+    return absolute_DirPath;
 }
 
 // return the exactly directory we find
