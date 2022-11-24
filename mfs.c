@@ -489,9 +489,12 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
     return NULL;
 }
 
-// to close the directory and free the memory we have allocated
-int fs_closedir(fdDir *dirp){
+//Function to close the directory and free the memory
+//we have allocated in the temp_LBABuffer
+int fs_closedir(fdDir *dirp)
+{
     free(dirp);
+    dirp = NULL;
     return 0;
 }
 
@@ -617,35 +620,84 @@ int fs_stat(const char *path, struct fs_stat *buf)
 }
 
 
-int fs_isDir(char * pathname){
-    fdDir * cp_cwd = fs_CWD;
-    printf("the original fs cwd is: %X", fs_CWD);
+//Function to check if the passed-in pure_PathCopy
+//is of type Directory 
+int fs_isDir(char * pathname)
+{
 
-    //replace the cwd by our open_dir if that is opened
-    int dir_open = 0;
-    if(directories == NULL){
-        printf("[mfs.c -- fs_isDir] directories is NULL\n");
-        return -1;
-    }else{
-        dir_open = 1;
-        fs_CWD = directories;
+    for (int i = 0; i <= strlen(pathname); i++)
+    {
+        // printf("check before if statement\n");
+        if (pathname[i] == '.')
+        {
+            // free(tempPtr);
+            // tempPtr = NULL;
+            return 0;
+        }
     }
 
-    //use get_dir_path to check DIR_TYPE while running
-    fdDir * tempPtr = get_dir_path(pathname);
+    // printf("pathname: %s\n", pathname);
+    for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
+    {
+        if (fs_CWD->dirEntry[i].fileType == FILE_TYPE &&
+            strcmp(fs_CWD->dirEntry[i].file_name, pathname) == 0)
+        {
+            // printf("filename find: %s\n", fs_CWD->dirEntry[i].file_name);
+            // printf("file type: %d\n", fs_CWD->dirEntry[i].fileType);
+            return 0;
+        }
+    }
+
+
+    fdDir *cwd_Pointer = fs_CWD;
+    // printf("the original fs cwd is: %X\n", fs_CWD);
+
+    //Replace the cwd by our open_dir if that is opened
+    int dir_open = 0;
+    if (rootDir == NULL)
+    {
+        printf("[mfs.c -- fs_isDir] directories is NULL\n");
+        return -1;
+    }
+    else
+    {
+        dir_open = 1;
+        fs_CWD = rootDir;
+    }
+
+    //Use parsePath to check if given pathname is of DIR_TYPE
+    fdDir *tempPtr = parsePath(pathname);
     int result = 0;
-    if(tempPtr == NULL){
+    if (tempPtr == NULL)
+    {
         printf("[mfs.c -- fs_isDir] tempPtr is NULL\n");
         return -1;
-    }else{
+    }
+    else
+    {
         result = 1;
     }
 
+    // used to check if the pathname haven't store in the dirEntry
+    for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
+    {
+        if (fs_CWD->dirEntry[i].fileType == DIR_TYPE &&
+            strcmp(fs_CWD->dirEntry[i].file_name, pathname) == 0)
+        {
+            //Set the CWD pointer back to the current working directory
+            fs_CWD = cwd_Pointer;
 
-    //rest athe fs_CWD
-    fs_CWD = cp_cwd;
-    
-    //free the retPtr
+            //Free our temp CWD pointer
+            free(tempPtr);
+            tempPtr = NULL;
+            return result;
+        }
+    }
+
+    //Set the CWD pointer back to the current working directory
+    fs_CWD = cwd_Pointer;
+
+    //Free our temp CWD pointer
     free(tempPtr);
     tempPtr = NULL;
     return result;
