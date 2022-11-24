@@ -14,15 +14,16 @@
 *
 **************************************************************/
 
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "mfs.c"
 #include "helperFunctions.h"
 
 #define Magic_Number 0x434A434A //"JCJC" converted to Hex (Big Endian)

@@ -26,18 +26,15 @@
 #define B_CHUNK_SIZE 512
 
 typedef struct b_fcb
-	{
-	/** TODO add al the information you need in the file control block **/
-
-	Directory_Entry * file;
-	char * buf;		//holds the open file buffer
-	int index;		//holds the current position in the buffer -- LBA used
-	int buflen;		//holds how many valid bytes are in the buffer
-	int b_flags; 	//holds the read/write file permissions
-	int fs_FD; 		//holds the system's file descriptor
-	int b_offset; 	//holds the position of where we are in the file
-
-	} b_fcb;
+{
+	int fs_FD;		 // holds the systems file descriptor
+	char *buf;		 // holds the open file buffer
+	uint64_t index;	 // holds the current position in the buffer
+	uint64_t buflen; // holds how many valid bytes are in the buffer
+	fdDir *parent;	 // holds the parent directory of the file
+	char *fileName;	 // holds the true file name not the path
+	int b_flags;	 // holds the functionality of the method
+} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
 

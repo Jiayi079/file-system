@@ -14,8 +14,9 @@
  *
  **************************************************************/
 
+
 #include "mfs.h"
-#include "bitmap.c"
+#include "helperFunctions.h"
 
 #define MAX_ENTRIES_NUMBER 8
 #define MAX_NAME_LENGTH 256

@@ -14,8 +14,12 @@
 *
 **************************************************************/
 
-// #include "mfs.h"
+#include "mfs.h"
 #include "fsLow.h"
+#include "helperFunctions.h"
+
+// Variables for allocating space in bitmap
+uint64_t targetIndex = 0, targetBit = 0;
 
 // //Function to get the block count in the VCB
 // unsigned int getVCB_BlockCount(uint64_t bl_number)
