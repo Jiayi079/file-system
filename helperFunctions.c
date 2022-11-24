@@ -50,34 +50,23 @@ int setBitUsed(uint64_t indexOfBlock, int *bitmap)
     return 0;
 }
 
-// //Function to get the block count in the VCB
-// unsigned int getVCB_BlockCount(uint64_t bl_number)
-// {
-//     int result = bl_number / JCJC_VCB -> blockSize;
-//     if (bl_number % JCJC_VCB -> blockSize > 0)
-//     {
-//         result++;
-//     }
-//     return result;
-// }
+//Function to set the passed-in bit as FREE in our bitmap
+int setBitFree(uint64_t indexOfBlock, int *bitmap)
+{
+    //Check if the current bit in the block is marked FREE
+    //if so, print error message
+    if (checkBit(indexOfBlock, bitmap) == SPACE_IS_FREE)
+    { 
+        printf("This bit is already marked free\n");
+        return -1;
+    }
+
+    //Set the current bit postion as free in the bitmap
+    bitmap[targetIndex] &= ~(SPACE_IN_USED << targetBit);
+    return 0;
+}
 
 
 
-// //Function to get how many bytes are needed from our VCB
-// unsigned int getVCB_num_bytes(uint64_t block_count)
-// {
-//     int result = block_count * JCJC_VCB -> blockSize;
-//     return result;
-// }
-
-//From git pull import, removing will generate complie error 
-//Will fix later 
-// unsigned int getVCB_BlockCount(uint64_t bl_number);
-
-// int allocateFreeSpace_Bitmap(int block_count_needed);
-
-// unsigned int getVCB_num_bytes(uint64_t block_count);
-
-// void setBitFree(uint64_t block_index, int * freespace);
 
 
