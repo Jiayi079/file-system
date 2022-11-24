@@ -49,13 +49,15 @@ typedef u_int32_t uint32_t;
 #endif
 typedef unsigned long long ull_t;
 
-
-
 int startPartitionSystem (char * filename, uint64_t * volSize, uint64_t * blockSize);
 
 int closePartitionSystem ();
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize);
+// init file system functions
+int init_VCB(uint64_t numberOfBlocks, uint64_t blockSize, __u_int blockCount_VCB);
+int init_freeSpace();
+int init__RootDir();
 void exitFileSystem ();
 
 uint64_t LBAwrite (void * buffer, uint64_t lbaCount, uint64_t lbaPosition);
