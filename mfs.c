@@ -495,64 +495,97 @@ int fs_closedir(fdDir *dirp){
     return 0;
 }
 
-int fs_isFile(char *path)
+//Function to check if the passed-in entry
+//is of type File 
+//TODO CHECK
+int fs_isFile(char * filename)
 {
-    // keep a copy of fsCWD and openedDir
-    fdDir *fd_Dir = fs_CWD;
+    //We keep tempCWD for later use to copy back to the fs_CWD,
+    //since we have to set the root directory as fs_CWD
+    // printf("check isFile filename: %s\n", filename);
+    fdDir *tempCWD = fs_CWD;
 
-    // replace cwd by openedDir if a directory is open
-    int checkDirOpened = 0;
-    if (directories != NULL)
+    //Initialize an open directory indicator, and if the root directory
+    //contains any data in it, then the directory will be marked as open
+    int dirIsOpened = 0;
+    if (rootDir != NULL)
     {
-        checkDirOpened = 1;
-        fs_CWD = directories;
+        dirIsOpened = 1;
+        fs_CWD = rootDir;
     }
 
-    // make a copy and substring before the last slash
-    char *pathBeforeLastSlash = malloc(strlen(path) + 1);
-    if (pathBeforeLastSlash == NULL)
+    //Make a copy of the file's path and substring the path with a 
+    //slash by calling parsePath() function
+    char *pathExculdeLastSlash = malloc(strlen(filename) + 1);
+    if (pathExculdeLastSlash != NULL)
     {
-        printf("[mfs.c -- fs_isFile] malloc pathBeforeLastSlash failed\n");
+        strcpy(pathExculdeLastSlash, filename);
+    }
+    else
+    {
+        printf("[mfs.c -- fs_isFile] malloc pathExculdeLastSlash failed\n");
         return -1;
     }
 
-    strcpy(pathBeforeLastSlash, path);
-    char * filename = getPathByLastSlash(pathBeforeLastSlash);
+    char *getfilename = get_path_last_slash(pathExculdeLastSlash);
 
-    // find the directory that is expected for holding that file
-    fdDir * new_dir = get_dir_path(pathBeforeLastSlash);
+    //Find the directory that contains this specific file by 
+    //calling yhe parsePath() function
+    fdDir *filePathDir = parsePath(pathExculdeLastSlash);
 
-    int result = 0;
-
-    // if the path is not even in a directory, then we don't need to check anymore
-    if (new_dir != NULL)
+    //If the file doesn't exist, this will automatically 
+    //not run this if statement
+    if (filePathDir != NULL)
     {
-        // check if the item is inside this directory
-        for (int i = 2; i < 8; i++)
-        { // make sure that is a used space, a directory and name matched
-            if (new_dir->dirEntry[i].isFreeOrUsed == 1 &&
-                new_dir->dirEntry[i].fileType == 1 &&
-                strcmp(new_dir->dirEntry[i].d_name, filename) == 0)
+        //Check if the file item is inside this directory
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+        {
+            //Check if the directory entry is marked as used, 
+            //is of type file, and if the directory name matches
+            //the expected dir name
+            // printf("filePathDir->dirEntry[i].fileType = %d\n", filePathDir->dirEntry[i].fileType);
+            // printf("filePathDir->dirEntry[i].file_name = %s\n", filePathDir->dirEntry[i].file_name);
+            if (filePathDir->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                filePathDir->dirEntry[i].fileType == FILE_TYPE &&
+                strcmp(filePathDir->dirEntry[i].file_name, getfilename) == 0)
             {
-                result = 1;
+
+                //Set the directory pointer from tempCWD back to fs_CWD
+                if (dirIsOpened)
+                {
+                    fs_CWD = tempCWD;
+                }
+
+                //Free our filePathDir and pointers
+                //and set all to NULL for next operation
+                free(filePathDir);
+                filePathDir = NULL;
+                free(pathExculdeLastSlash);
+                pathExculdeLastSlash = NULL;
+                free(getfilename);
+                getfilename = NULL;
+
+                return 1;
             }
         }
     }
 
-    // make sure we reset and also free the retPtr
-    if (checkDirOpened)
+    //Set the directory pointer from tempCWD back to fs_CWD
+    if (dirIsOpened)
     {
-        fs_CWD = fd_Dir;
+        fs_CWD = tempCWD;
     }
 
-    free(new_dir);
-    new_dir = NULL;
-    free(pathBeforeLastSlash);
-    pathBeforeLastSlash = NULL;
-    free(filename);
-    filename = NULL;
+    //Free our filePathDir and pointers
+    //and set all to NULL for next operation
+    free(filePathDir);
+    filePathDir = NULL;
+    free(pathExculdeLastSlash);
+    pathExculdeLastSlash = NULL;
+    free(getfilename);
+    getfilename = NULL;
 
-    return result;
+    return 0;
 }
 
 //Funcion to load the status of a file in the opened directory
@@ -725,11 +758,11 @@ int fs_setcwd(char * pathname){
 
 }
 
-//Function to get the block count in the VCB
+//Function to get the block count currenlty stored in our VCB
 unsigned int getVCB_BlockCount(uint64_t bl_number)
 {
-    int result = bl_number / JCJC_VCB -> blockSize;
-    if (bl_number % JCJC_VCB -> blockSize > 0)
+    int result = bl_number / JCJC_VCB->blockSize;
+    if (bl_number % JCJC_VCB->blockSize > 0)
     {
         result++;
     }
