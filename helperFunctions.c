@@ -33,6 +33,23 @@ int checkBit(uint64_t indexOfBlock, int *bitmap)
     return (bitmap[targetIndex] & (SPACE_IN_USED << targetBit)) != SPACE_IS_FREE; // 0 -> false
 }
 
+//Function to set the passed-in bit as USED in our bitmap
+int setBitUsed(uint64_t indexOfBlock, int *bitmap)
+{
+    //Check if the current bit in the block is marked USED
+    //if so, print error message
+    if (checkBit(indexOfBlock, bitmap) == SPACE_IN_USED)
+    {   
+        printf("This bit is already marked used\n");
+        return -1;
+    }
+
+    // Set the current bit postion as used in the bitmap
+    // printf("bit at %ld is set to USED", indexOfBlock);
+    bitmap[targetIndex] |= (SPACE_IN_USED << targetBit);
+    return 0;
+}
+
 // //Function to get the block count in the VCB
 // unsigned int getVCB_BlockCount(uint64_t bl_number)
 // {
@@ -60,8 +77,6 @@ int checkBit(uint64_t indexOfBlock, int *bitmap)
 // int allocateFreeSpace_Bitmap(int block_count_needed);
 
 // unsigned int getVCB_num_bytes(uint64_t block_count);
-
-// void setBitUsed(uint64_t block_index, int * freespace);
 
 // void setBitFree(uint64_t block_index, int * freespace);
 
