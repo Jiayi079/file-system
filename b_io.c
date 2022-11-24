@@ -335,68 +335,83 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 // Interface to write function	
 int b_write (b_io_fd fd, char * buffer, int count)
 	{
-	if(strlen(buffer) == 0){
-  		exit(0);
- 	}
- 
- 	if (startup == 0) b_init();  //Initialize our system
+	
+	if (startup == 0)
+		b_init(); // Initialize our system
 
-	// check that fd is between 0 and (MAXFCBS-1)
-	if ((fd < 0) || (fd >= MAXFCBS))
+	if ((fd < 0) || (fd >= MAXFCBS) || fcbArray[fd].fs_FD == -1 || count < 0)
 	{
-	return (-1);      //invalid file descriptor
-	}
-  
-	// file can not open for this descriptor
-	if(fcbArray[fd].fs_FD == -1){
-		exit(-1);
-	}
- 
-	// file can not open for this descriptor
-	if(!fcbArray[fd].b_flags & O_WRONLY || !fcbArray[fd].b_flags & O_RDWR){
-		exit(-1);
+		return (-1);
 	}
 
-	if(count < 200){
-	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
+	// initialize the detector the first time it calls this function
+	if (fcbArray[fd].b_flags == 0)
+	{
+		fcbArray[fd].b_flags = 2; // set become 2 means write, and 1 means read
 
-	fcbArray[fd].buflen += count;
+		// check if there is no more place to store files in parent directory
+		if (fcbArray[fd].parent->dirEntryPosition >= MAX_ENTRIES_NUMBER)
+		{
+			fcbArray[fd].fs_FD = -2;
+			return -1;
+		}
 
-	// the default file block count we set is as 10
-	if(strlen(fcbArray[fd].buf) > 10*B_CHUNK_SIZE){
+		// check if there is already a same name of file
+		for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
+		{
+			if (fcbArray[fd].parent->dirEntry[i].dirUsed == SPACE_IN_USED &&
+				strcmp(fcbArray[fd].parent->dirEntry[i].file_name, fcbArray[fd].fileName) == 0)
+			{
+				printf("\nsame name of directory or file existed\n");
+				fcbArray[fd].fs_FD = -2;
+				return -1;
+			}
+		}
 
-		//relase the space
-		for (int i = directories[fcbArray[fd].index].directoryStartLocation;
-            i < JCJC_VCB->numberOfBlocks; i++)
-        {
-            setBitFree(i, freespace);
-        }
-
-		// after free the space, we allocate a new one
-		//to save not have over block
-		int safe_size = (fcbArray[fd].buflen + (512 -1)) / B_CHUNK_SIZE;
-		allocateFreeSpace_Bitmap(safe_size);
-
+		// allocate the buffer with the first size
+		fcbArray[fd].buf = malloc(B_CHUNK_SIZE);
+		if (fcbArray[fd].buf == NULL)
+		{
+			printf("malloc() on fcbArray[returnFd].buf");
+			fcbArray[fd].fs_FD = -2;
+			return -1;
+		}
+		fcbArray[fd].buflen += B_CHUNK_SIZE;
 	}
 
-	//we set the buffer maximum size is 50
-	LBAwrite(fcbArray[fd].buf, 50, fcbArray[fd].index);
-
-	//then return the value of number we have written
-	return (strlen(buffer));
+	// it shouldn't do another functionality
+	if (fcbArray[fd].b_flags != 2) // check if the b_flags is present to write
+	{
+		// printf("no mix use of functionality!");
+		return -1;
 	}
- 
- 
-	//copy the length of the the buffer into our buf
-	strncpy(fcbArray[fd].buf + fcbArray[fd].b_offset, buffer, count);
-	fcbArray[fd].buflen += strlen(buffer);
-	fcbArray[fd].b_offset += strlen(buffer);
 
-	//then return the value of number we have written
-	return (strlen(buffer));
+	// if it just reaches EOF, we skip the copy process
+	// this is a rare case for file with mutiples of the buffer sizes
+	if (count != 0)
+	{
+		// calculate the index to determine realloc()
+		uint64_t newIndex = fcbArray[fd].index + count;
+		if (newIndex > fcbArray[fd].buflen)
+		{
+			// realloc() with the new length
+			fcbArray[fd].buflen += B_CHUNK_SIZE;
+			fcbArray[fd].buf = realloc(fcbArray[fd].buf, fcbArray[fd].buflen);
+			if (fcbArray[fd].buf == NULL)
+			{
+				printf("realloc() on fcbArray[argfd].buf");
+				return -1;
+			}
+		}
+
+		// copy into our buffer and set the new index
+		memcpy(fcbArray[fd].buf + fcbArray[fd].index, buffer, count);
+		fcbArray[fd].index = newIndex;
+	}
+
+	return 0;
+
 }
-
-
 
 // Interface to read a buffer
 
