@@ -1219,6 +1219,67 @@ unsigned int getVCB_num_bytes(uint64_t block_count)
     return result;
 }
 
+// replase the block int the free space bit map
+int releaseFreespace(uint64_t start, uint64_t count)
+{
+    // handle error of invalid count, generally not goint to happen
+    if (start < (JCJC_VCB->freeSpace_BlockCount + JCJC_VCB->VCB_blockCount) ||
+        count < 1 ||
+        start + count > JCJC_VCB->numberOfBlocks)
+    {
+        printf("start: %d, count: %d\n", start, count);
+        printf("JCJC_VCB->freeSpace_BlockCount : %d\n",JCJC_VCB->freeSpace_BlockCount);
+        printf("JCJC_VCB->VCB_blockCount : %d\n",JCJC_VCB->VCB_blockCount);
+        printf("JCJC_VCB->numberOfBlocks : %d\n",JCJC_VCB->numberOfBlocks);
+        printf("invalid arg in releaseFreespace\n");
+        return -2;
+    }
+
+    for (uint64_t i = 0; i < count; i++)
+    {
+        // handle error when setBitFree get in errors
+        if (setBitFree(start + i, freespace) != 0)
+        {
+            // this won't run if checkBit() works as expected
+            printf("setBitFree() failed, bit at %ld", start + i);
+
+            // we should mark those back in order to recover
+            for (i--; i >= 0; i--)
+            {
+                setBitUsed(start + i, freespace);
+            }
+            return -1;
+        }
+    }
+
+    // simply compare if the freed block is before the freeblock index
+    if (start < JCJC_VCB->current_FreeBlockIndex)
+    {
+        // set the new first free block index and update JCJC_VCB
+        // printf("current free block index changes to %ld\n", start);
+        JCJC_VCB->current_FreeBlockIndex = start;
+        LBAwrtie_func(JCJC_VCB, sizeof(volume_ControlBlock), 0);
+    }
+
+    // next step: finding free space
+    // do a round up since it needs to turn bits into bytes
+    uint64_t bytes = convertBitToBytes();
+
+    // starts right behind vcb
+    LBAwrtie_func(freespace, bytes, JCJC_VCB->VCB_blockCount);
+
+    // testing freespace on removing
+    // printf("\nused block index: ");
+    // for (int i = 0; i < JCJC_VCB->numberOfBlocks; i++)
+    // {
+    //     if (checkBit(i, freespace) == SPACE_IN_USED)
+    //     {
+    //         printf("%d ", i);
+    //     }
+    // }
+
+    return 0;
+}
 
 // delete the file
 int fs_delete(char* filename)
