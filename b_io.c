@@ -25,6 +25,9 @@
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
 
+// static mutex for only b_io to avoid race condition
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct b_fcb
 {
 	int fs_FD;		 // holds the systems file descriptor
@@ -68,223 +71,92 @@ b_io_fd b_getFCB ()
 // Interface to open a buffered file
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
-b_io_fd b_open (char * filename, int flags)
+b_io_fd b_open(char * filename, int flags)
 {
 	b_io_fd returnFd;
 
-	int fd;
-	int index_LBA;
+	if (startup == 0)
+		b_init(); // Initialize our system
 
-	if (startup == 0) 
+	pthread_mutex_lock(&mutex);
+
+	// get fd
+	returnFd = b_getFCB();
+
+	fcbArray[returnFd].fs_FD = returnFd; // save the fd
+
+	pthread_mutex_unlock(&mutex);
+
+	// question: user may input a path instead of a filename
+	// what we are trying to do is to figure out both condition:
+	// path and filename
+	char *pathExculdeSlash;
+
+	pathExculdeSlash = malloc(strlen(filename) + 1);
+
+	if (pathExculdeSlash == NULL)
 	{
-		b_init();  //Initialize our system
-	}
-
-	char path[256];
-
-	if (strlen(cwd) > 1) // check if cwd already is a path
-	{
-		strcpy(path, cwd);
-        strcat(path, "/"); // copy cwd to path by adding a slash
-		strcat(path, filename); // add filename after adding slash
-	}
-	else
-    {
-		// if cwd is not a path, copy cwd to path without adding a slash
-        strcpy(path, cwd);
-        strcat(path, filename);
-    }
-
-	// create a temporary directory entry
-
-	char * buffer;
-
-	// TODO: not sure the maximum block count here, set 50 first?
-	buffer = (char *)malloc(50 * 512);
-	// TODO: not sure the buffer maximum count size
-	int bufferMax = 50;
-
-	Directory_Entry * de;
-	int tempIndex = -1; // set to -1 for now to check error later
-	for (int i = 0; i < 20; i++)
-	{
-		de = (Directory_Entry *)directories[i].dirEntry[0];
-		if (strcmp(de->filePath, path) == 0)
-		{
-			// if finding the path in de successfully
-			// keep the index i for later using
-			tempIndex = i;
-            break;
-		}
-	}
-
-	if (tempIndex != -1) // means we found the file in the directory
-	{
-		if (directories[tempIndex].fileType == 0) // 0 -> dir, 1 -> file
-		{
-			return -1; // terminate open function
-		}
-		else // otherwise this file type is a file
-		{
-			char * readedBuffer;
-			int offset = 0;
-			int alreadyReadedCount = 0;
-			readedBuffer = (char *)malloc(512);
-			// buffer, 50(max buffer count), directories[tempIndex].directoryStartLocation
-			for (int i = directories[tempIndex].directoryStartLocation; 
-				i < JCJC_VCB->numberOfBlocks; i++)
-			{
-				if (bufferMax == 0)
-				{
-					break;
-				}
-				LBAread(readedBuffer, 1, i);
-				// TODO: need to check signal??
-				offset = alreadyReadedCount * 512;
-				alreadyReadedCount++;
-				strcpy(buffer + offset, readedBuffer);
-				bufferMax--;
-			}
-			// free readedBuffer which is only used in the for loop
-			free(readedBuffer);
-            readedBuffer = NULL;
-		}
-	}
-
-
-	if (tempIndex == -1) // means the file does not exist
-    {
-		if ((flags & O_CREAT) == 0)
-		{
-			return -1; // terminate open function
-		}
-
-		int index_LBA = allocateFreeSpace_Bitmap(10);
-
-		Directory_Entry * child_de;
-		setDirectoryEntry(child_de, filename, 10 * JCJC_VCB->blockSize, 1, path, 1);
-
-		int cwdIndex;
-		// get cwdIndex
-		for (int i = 0; i < 20; i++)
-		{
-			child_de = (Directory_Entry *)directories[i].dirEntry[0];
-			if (strcmp(child_de->filePath, path) == 0)
-			{
-				cwdIndex = i;
-				break;
-			}
-		}
-
-		// TODO: may add check if cwdIndex is -1 ?
-
-		int check = -1;
-		for (int i = 0; i < 8; i++)
-        {
-			de = (Directory_Entry *)directories[cwdIndex].dirEntry[i];
-			if (de->dirUsed == 0)
-			{
-				check = i;
-				// don't have to used break, we need to keep the last one
-			}
-		}
-
-		// check if check is -1, which means child directory set failed
-		if (check == -1)
-		{
-			printf("[b_io.c -- b_open()]: child directory set failed\n");
-		}
-
-		memcpy(directories[cwdIndex].dirEntry[check], (char *)child_de, 512);
-
-		// find unused location in directory
-		int unused = -1;
-		for (int i = 1; i < 20; i++)
-		{
-			if (directories[i].isUsed == 0)
-			{
-				unused = i;
-                break;
-			}
-		}
-
-		if (unused!= -1)
-        {
-			printf("[b_io.c -- b_open()]: Don't have enough space in directory\n");
-			return -1;
-		}
-
-		strcpy(directories[unused].d_name, filename);
-		directories[unused].isUsed = 1;
-		directories[unused].fileType = 1;
-		directories[unused].dirLBA = index_LBA;
-
-		// TODO: need to add those value??
-		// unsigned short  d_reclen;
-		// uint64_t blockIndex;
-		// struct fs_diriteminfo dir_DE_count[MAX_DE];
-		// unsigned int current_location;
-
-		Directory_Entry * curr_de;
-		setDirectoryEntry(curr_de, ".", sizeof(fdDir), 0, path, 1);
-
-		Directory_Entry * par_de;
-		setDirectoryEntry(par_de, "..", sizeof(fdDir), 0, cwd, 1);
-
-		memcpy(directories[unused].dirEntry[0], (char *)curr_de, 512);
-		memcpy(directories[unused].dirEntry[1], (char *)par_de, 512);
-
-		LBAwrite((char *)directories, length_of_dir, JCJC_VCB->location_RootDirectory);
-
-		free(curr_de);
-		curr_de = NULL;
-		free(par_de);
-		par_de = NULL;
-        free(child_de);
-		child_de = NULL;
-	}
-
-
-
-	//*** TODO ***:  Modify to save or set any information needed
-	//
-	//
-	
-	returnFd = b_getFCB();				// get our own file descriptor
-										// check for error - all used FCB's
-	
-	if (returnFd == -1)
-    {
-		printf("[b_io.c -- b_open()]: b_getFCB() failed\n");
+		printf("[b_io.c -- b_open] malloc pathExculdeSlash failed\n");
 		return -1;
 	}
 
-	fcbArray[returnFd].fs_FD = fd; // Save the linux file descriptor
-	fcbArray[returnFd].index = index_LBA;
-	fcbArray[returnFd].b_flags = flags;
+	strcpy(pathExculdeSlash, filename);
+	fcbArray[returnFd].fileName = get_path_last_slash(pathExculdeSlash);
+	// printf("filename we get: %s\n", fcbArray[fd].fileName);
 
-	if (buffer != NULL)
+	// check if the filename we get is nothing, we need end up this function and return error
+	if (strcmp(fcbArray[returnFd].fileName, "") == 0)
 	{
-		fcbArray[returnFd].buf = calloc(20 * B_CHUNK_SIZE, sizeof(char));
-		strcpy(fcbArray[returnFd].buf, buffer);
-		fcbArray[returnFd].buflen = 0; // have not read anything yet
-		fcbArray[returnFd].b_offset = 0; // have not read anything yet
-		return (returnFd);			   // all set
-	}
-	else
-    {
-		fcbArray[returnFd].buf = malloc(20 * B_CHUNK_SIZE);
-		fcbArray[returnFd].buflen = 0; // have not read anything yet
-		fcbArray[returnFd].b_offset = 0; // have not read anything yet
-    }
-
-	if (fcbArray[returnFd].buf == NULL)
-	{
-		b_close(returnFd);
-		return -1;
+		printf("fileName should not be empty\n");
+		fcbArray[returnFd].fs_FD = -2; // means get fd failed
+		free(pathExculdeSlash);
+		pathExculdeSlash = NULL;
+		return -2;
 	}
 
-	return (returnFd);						// all set
+	// get the dir path and set up it to its parent directory
+	fcbArray[returnFd].parent = parsePath(pathExculdeSlash);
+
+	// check if the parent directory stored successfully
+	if (fcbArray[returnFd].parent == NULL)
+	{
+		fcbArray[returnFd].fs_FD = -2; // means get fd failed
+		free(pathExculdeSlash);
+		pathExculdeSlash = NULL;
+		return -2;
+	}
+
+	// check if the filename is a file --> contains "." inside of the name
+	// printf("get parent name: %s\n", fcbArray[fd].parent->d_name);
+	int check = 0;
+	// 20 is the maximum number of the character in fcbArray[fd].fileName[20]
+	for (int i = 0; i < strlen(fcbArray[returnFd].fileName); i++)
+	{
+		if (fcbArray[returnFd].fileName[i] == '.') // test2.txt
+		{
+			check = 1;
+			break;
+		}
+	}
+
+	// if flags == 1, means fileName is a file name not dir name
+	if (check == 1)
+	{
+		printf("Creating a file, filename: %s\n", fcbArray[returnFd].fileName);
+		fs_mkFile(fcbArray[returnFd].fileName, 0777);
+	}
+
+	// set out fcbArray[free_fcb_element] become 0 avoid error
+	// since we finished the open and
+	// we may store ohter value insdie of this array
+	fcbArray[returnFd].buflen = 0;
+	fcbArray[returnFd].index = 0;
+	fcbArray[returnFd].b_flags = 0;
+
+	free(pathExculdeSlash);
+	pathExculdeSlash = NULL;
+
+	return (returnFd); // all set
 }
 
 
