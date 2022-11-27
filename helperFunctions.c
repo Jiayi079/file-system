@@ -170,5 +170,14 @@ uint64_t allocateFreeSpace_Bitmap(uint64_t block_ToBeAllocated)
     return -1;
 }
 
-
-
+//Function to convert the bits in our VCB to bytes
+//that can be read by our File System
+int convertBitToBytes()
+{
+    uint64_t bytes = JCJC_VCB->numberOfBlocks / 8;
+    if (JCJC_VCB->numberOfBlocks % 8 > 0)
+    {
+        bytes++;
+    }
+    return bytes;
+}
