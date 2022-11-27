@@ -813,25 +813,30 @@ fdDir * parsePath(char *name)
 
 // return the exactly directory we find
 // return NULL if not found anything
-fdDir * fs_opendir(const char *name)
+//Function to open a directory from a given pathname
+fdDir *fs_opendir(const char *pathname)
 {
-    // copy the name to avoid modifying it
-    char *path = malloc(strlen(name) + 1);
-    if (path == NULL)
+    //Make a pure copy of the path name by mallocing
+    char *pure_PathCopy = malloc(strlen(pathname) + 1);
+
+    //Print error message if pure_PathCopy is NULL
+    if (pure_PathCopy == NULL)
     {
-        printf("[mfs.c -- fs_opendir] malloc path failed\n");
+        printf("[Failed to malloc a pure_PathCopy\n");
         return NULL;
     }
 
-    strcpy(path, name);
-    directories = get_dir_path(path);
+    //Copy the current path of the directory into our 
+    //pure_PathCopy and then get the root directory
+    strcpy(pure_PathCopy, pathname);
+    rootDir = parsePath(pure_PathCopy);
 
-    // set the entry index to 0 for fs_readDir() works
+    //Free our malloced pure_PathCopy and set to NULL
     openedDirEntryIndex = 0;
 
-    free(path);
-    path = NULL;
-    return directories;
+    free(pure_PathCopy);
+    pure_PathCopy = NULL;
+    return rootDir;
 }
 
 
