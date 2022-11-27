@@ -160,46 +160,19 @@ b_io_fd b_open(char * filename, int flags)
 }
 
 
-// Interface to seek function	
-int b_seek (b_io_fd fd, off_t offset, int whence)
+// Interface to seek function
+int b_seek(b_io_fd fd, off_t offset, int whence)
 {
-	if (startup == 0) b_init();  //Initialize our system
+	if (startup == 0)
+		b_init(); // Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
 	if ((fd < 0) || (fd >= MAXFCBS))
-		{
-		return (-1); 					//invalid file descriptor
-		}
-		
-	//If offset position is at the beginning, then
-	//set position of offset to the beginning of file
-		if (whence & SEEK_SET)
 	{
-
-		fcbArray[fd].index = offset;
-
+		return (-1); // invalid file descriptor
 	}
 
-	//If offset position is at the current position, then
-	//set position of offset to the curent pointer of the file
-	if (whence & SEEK_CUR)
-	{
-
-		fcbArray[fd].index += offset;
-
-	}
-
-	//If offset position is at the end, then
-	//this means we are the end of file
-	if (whence & SEEK_END)
-	{
-	
-		fcbArray[fd].index = fcbArray[fd].file -> fileSize / B_CHUNK_SIZE;
-
-	}
-
-	//Return the current file position in our buffer 
-	return (fcbArray[fd].index); 
+	return (0); // Change this
 }
 
 
