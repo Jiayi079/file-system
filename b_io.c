@@ -19,6 +19,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
+
 #include "b_io.h"
 #include "mfs.h"
 
