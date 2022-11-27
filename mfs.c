@@ -21,26 +21,24 @@
 #define MAX_ENTRIES_NUMBER 8
 #define MAX_NAME_LENGTH 256
 
-// The mkdir() function creates a new, empty directory with name filename
+// The mkdir() function creates a new, empty directory with a given name filename
 // return 0  -> successfully
 // return -1 -> failed
 int fs_mkdir(const char *pathname, mode_t mode)
 {
-
-    // make copy and use that for substrings
+    // make a copy and use that for substring
     char *path_before_last_slash = malloc(strlen(pathname) + 1);
-
     if (path_before_last_slash != NULL)
     {
         strcpy(path_before_last_slash, pathname);
     }
     else
     {
-        eprintf("malloc path_before_last_slash failed!");
-        exit(-1);
+        printf("[mfs.c -- fs_mkdir] malloc path_before_last_slash failed!\n");
+        return -1;
     }
 
-    // substrings and get the left patt as new directory name
+    // get the left patt as the new directory name by substringing
     char *new_dir_name = get_path_last_slash(path_before_last_slash);
     if (strcmp(new_dir_name, "") == 0)
     {
@@ -49,147 +47,169 @@ int fs_mkdir(const char *pathname, mode_t mode)
     }
     if (new_dir_name == NULL)
     {
-        printf("get_path_last_slash failed!");
+        printf("get_path_last_slash failed!\n");
         return -1;
     }
 
-    // to get the dir ptr
-    fdDir *parent_dir = get_dir_path(path_before_last_slash);
-
+    // get the directory pointer
+    fdDir *parent_dir = parsePath(path_before_last_slash);
     if (parent_dir == NULL)
     {
-        printf("%s is not exisited from cwd\n", path_before_last_slash);
+        printf("'%s' is not exisited from cwd\n", path_before_last_slash);
 
+        // avoid memory leak
         free(path_before_last_slash);
-        path_before_last_slash = NULL;
         free(new_dir_name);
+        path_before_last_slash = NULL;
         new_dir_name = NULL;
         return -1;
     }
 
     // create direcotory
-    // check if the dirEntryCount is less than the maximum number of ammount entries -> 8
-    if (parent_dir->dirEntryCount < 8)
+    // check if the dirEntryPosition is less than the maximum number of ammount entries -> 8
+    if (parent_dir->dirEntryPosition < MAX_ENTRIES_NUMBER)
     {
         // can hold dirEntry
         // check if the space is free or not
         // check if the name already exists
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < MAX_ENTRIES_NUMBER; i++)
         {
-            if (parent_dir->dirEntry[i].isFreeOrUsed == 1 &&
-                strcmp(parent_dir->dirEntry[i].d_name, new_dir_name) == 0)
+            if (parent_dir->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                strcmp(parent_dir->dirEntry[i].file_name, new_dir_name) == 0)
             {
                 printf("[mfs.c -- mkdir] name already exsist in directory\n");
 
                 // avoid memory leak
                 free(path_before_last_slash);
-                path_before_last_slash = NULL;
                 free(new_dir_name);
-                new_dir_name = NULL;
                 free(parent_dir);
+                path_before_last_slash = NULL;
+                new_dir_name = NULL;
                 parent_dir = NULL;
                 return -1;
             }
         }
 
-        printf("creating new directory '%s' successfully\n", new_dir_name);
-
-        // makeing new directory
-
-        fdDir *creatDir;
-
-        if (creatDir == NULL)
+        // create the new directory
+        // malloc() a new directory and clean it up
+        fdDir *createdDir = malloc(sizeof(fdDir));
+        if (createdDir != NULL)
         {
-            printf("malloc() creatDir failed\n");
+            memset(createdDir, 0, sizeof(fdDir));
+        }
+        else
+        {
+            printf("[mfs.c -- fs_mkdir] malloc createdDir failed\n");
             return NULL;
         }
 
-        memset(creatDir, 0, sizeof(fdDir));
-
         // initialize the directory and allocate the space for it
-        uint64_t dirBlockCount = getBlockCount(sizeof(fdDir));
-        int findFreeSpace = allocateFreespace(dirBlockCount);
-        if (findFreeSpace <= 0)
+        int freeSpaceLocation = allocateFreeSpace_Bitmap(getVCB_BlockCount(sizeof(fdDir)));
+        if (freeSpaceLocation > 0)
         {
-            printf("[mfs.c -- mkdir] don't have enough free space\n");
-            return -1;
-        }
-        creatDir->directoryStartLocation = findFreeSpace;
-        creatDir->d_reclen = sizeof(fdDir);
-        creatDir->dirEntryCount = 2;
-
-        if (strlen(new_dir_name) > (MAX_NAME_LENGTH - 1))
-        {
-            char *name = malloc(MAX_NAME_LENGTH);
-            if (name == NULL)
-            {
-                printf("[mfs.c -- mkdir] malloc shorName failed\n");
-                return NULL;
-            }
-
-            // make sure it only contains one less than the max for null terminator
-            strncpy(name, new_dir_name, MAX_NAME_LENGTH - 1);
-            name[MAX_NAME_LENGTH - 1] = '\0';
-            strcpy(creatDir->d_name, name);
-
-            free(name);
-            name = NULL;
-        }
-
-        // initialize creatDir
-        strcpy(creatDir->dirEntry[0].d_name, ".");
-        creatDir->dirEntry[0].fileType = 0;
-        creatDir->dirEntry[0].isFreeOrUsed = 1;
-        creatDir->dirEntry[0].entry_StartLocation = findFreeSpace;
-        creatDir->dirEntry[0].d_reclen = sizeof(struct fs_diriteminfo);
-        creatDir->dirEntry[0].fileSize = sizeof(fdDir);
-
-        if (parent_dir->dirEntry == NULL)
-        { // if parent is NULL, this is a root directory
-            memcpy(creatDir->dirEntry + 1, creatDir->dirEntry, sizeof(struct fs_diriteminfo));
+            createdDir->directoryStartLocation = freeSpaceLocation;
+            createdDir->d_reclen = sizeof(fdDir);
+            createdDir->dirEntryPosition = 2;
         }
         else
-        { // if parent is not NULL, we copy the parent into this entry
-            memcpy(creatDir->dirEntry + 1, creatDir, sizeof(struct fs_diriteminfo));
+        {
+            printf("[mfs.c -- mkdir] don't have enough free space\n");
+            return NULL;
         }
 
-        // parent directory needs to be renamed to ..
-        strcpy(creatDir->dirEntry[1].d_name, "..");
-
-        for (int i = 2; i < 8; i++)
+        // check if new_dir_name is too long
+        if (strlen(new_dir_name) > (MAX_NAME_LENGTH - 1))
         {
-            creatDir->dirEntry[i].isFreeOrUsed = 0;
+            char *tempName = malloc(MAX_NAME_LENGTH);
+            if (tempName == NULL)
+            {
+                printf("[mfs.c -- mkdir] malloc tempName failed\n");
+                return NULL;
+            }
+            else
+            {
+                // make sure it only contains one less than the max for null terminator
+                strncpy(tempName, new_dir_name, MAX_NAME_LENGTH - 1);
+                tempName[MAX_NAME_LENGTH - 1] = '\0';
+                strcpy(createdDir->d_name, tempName);
+
+                free(tempName);
+                tempName = NULL;
+            }
+        }
+        else
+        {
+            strcpy(createdDir->d_name, new_dir_name);
+        }
+
+        // initialize current directory entry .
+        strcpy(createdDir->dirEntry[0].file_name, ".");
+        createdDir->dirEntry[0].fileType = DIR_TYPE;
+        createdDir->dirEntry[0].dirUsed = SPACE_IN_USED;
+        createdDir->dirEntry[0].dir_Location = freeSpaceLocation;
+        createdDir->dirEntry[0].d_reclen = sizeof(struct Directory_Entry);
+        createdDir->dirEntry[0].fileSize = sizeof(fdDir);
+
+        // initialize parent directory entry
+        if (parent_dir->dirEntry == NULL)
+        { // if parent is NULL, this is a root directory
+            memcpy(createdDir->dirEntry + 1, createdDir->dirEntry, sizeof(struct Directory_Entry));
+            // parent directory needs to be renamed to ".."
+            strcpy(createdDir->dirEntry[1].file_name, "..");
+        }
+        if (parent_dir->dirEntry != NULL)
+        {
+            // if parent is not NULL, need to copy the parent into out entry
+            memcpy(createdDir->dirEntry + 1, parent_dir->dirEntry, sizeof(struct fs_diriteminfo));
+            // parent directory needs to be renamed to ".."
+            strcpy(createdDir->dirEntry[1].file_name, "..");
+        }
+
+        // Since we cleaned newDir above and SPACE IS FREE = 0, this step can be skipped.
+        // Instead, cycle through the remaining entries to designate them as free.
+        // i = 2 because we set parent directory entry into 1, so it should be start at 2
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+        {
+            createdDir->dirEntry[i].dirUsed = SPACE_IS_FREE;
         }
 
         // finding the available free space starting location
-        for (int i = 2; i < 8; i++)
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
         {
-            if (parent_dir->dirEntry[i].isFreeOrUsed == 0)
+            if (parent_dir->dirEntry[i].dirUsed == SPACE_IS_FREE)
             {
                 // if dirEntry is free, put the data in
-                parent_dir->dirEntryCount++;
-                parent_dir->dirEntry[i].d_reclen = sizeof(struct fs_diriteminfo);
-                parent_dir->dirEntry[i].fileType = 0; // 0 -> dir
-                parent_dir->dirEntry[i].entry_StartLocation = creatDir->directoryStartLocation;
-                parent_dir->dirEntry[i].isFreeOrUsed = 1;
+                parent_dir->dirEntryPosition++;
+                parent_dir->dirEntry[i].d_reclen = sizeof(struct Directory_Entry);
+                parent_dir->dirEntry[i].fileType = DIR_TYPE;
+                parent_dir->dirEntry[i].dir_Location = createdDir->directoryStartLocation;
+                printf("dir_location in mkdir: %d\n", parent_dir->dirEntry[i].dir_Location);
+                parent_dir->dirEntry[i].dirUsed = SPACE_IN_USED;
                 parent_dir->dirEntry[i].fileSize = sizeof(fdDir);
-                strcpy(parent_dir->dirEntry[i].d_name, creatDir->d_name);
+                strcpy(parent_dir->dirEntry[i].file_name, createdDir->d_name);
 
-                // update creatDir directory
-                updateByLBAwrite(creatDir, creatDir->d_reclen, creatDir->directoryStartLocation);
-                if (fs_CWD != NULL && creatDir->directoryStartLocation == fs_CWD->directoryStartLocation)
+                // write the two changed files back into the disk
+                LBAwrtie_func(createdDir, createdDir->d_reclen,
+                                 createdDir->directoryStartLocation);
+
+                // read the data again if it is updating cwd
+                if (fs_CWD != NULL && createdDir->directoryStartLocation == fs_CWD->directoryStartLocation)
                 {
-                    memcpy(fs_CWD, creatDir, sizeof(fdDir));
+                    memcpy(fs_CWD, createdDir, sizeof(fdDir));
                 }
 
-                // update parent_dir directory
-                updateByLBAwrite(parent_dir, parent_dir->d_reclen, parent_dir->directoryStartLocation);
+                LBAwrtie_func(parent_dir, parent_dir->d_reclen,
+                                 parent_dir->directoryStartLocation);
+
+                // read the data again if it is updating cwd
                 if (fs_CWD != NULL && parent_dir->directoryStartLocation == fs_CWD->directoryStartLocation)
                 {
                     memcpy(fs_CWD, parent_dir, sizeof(fdDir));
                 }
 
-                break; // break out of loop
+                printf("Creating directory %s success\n", parent_dir->dirEntry[i].file_name);
+
+                break;
             }
         }
     }
