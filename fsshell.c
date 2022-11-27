@@ -38,17 +38,17 @@
 #define DIRMAX_LEN		4096
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
-#define CMDLS_ON	0
-#define CMDCP_ON	0
-#define CMDMV_ON	0
-#define CMDMD_ON	0
-#define CMDRM_ON	0
-#define CMDCP2L_ON	0
-#define CMDCP2FS_ON	0
-#define CMDCD_ON	0
-#define CMDPWD_ON	0
-#define CMDTOUCH_ON	0
-#define CMDCAT_ON	0
+#define CMDLS_ON	1
+#define CMDCP_ON	1
+#define CMDMV_ON	1
+#define CMDMD_ON	1
+#define CMDRM_ON	1
+#define CMDCP2L_ON	1
+#define CMDCP2FS_ON	1
+#define CMDCD_ON	1
+#define CMDPWD_ON	1
+#define CMDTOUCH_ON	1
+#define CMDCAT_ON	1
 
 
 typedef struct dispatch_t
@@ -363,76 +363,159 @@ int cmd_cp (int argcnt, char *argvec[])
 ****************************************************/
 int cmd_mv (int argcnt, char *argvec[])
 	{
-#if (CMDMV_ON == 1)
+#if (CMDMV_ON == 1)				
+	// **** TODO ****  For you to implement	
+	// 1. To Move Files to a Directory Maintaining Original File Names
+	// 2. To Move and Rename a File or Directory
+	// mv test1.txt test3.txt
 
-	char move_Buffer[BUFFERLEN]; //Temp buffer for moving file 
-	int read_FileIndicator;  //Indicates if file has been read from fs
-	int write_FileIndicator; //Indicates if the file has been written by fs
-	int src_LocationTo;		//Location of source file 
-	int dest_LocationTo;	//Location of destination file
-	char * source_File; 			//Pointer to source file
-	char  * destination_File;	//Pointer to destination file
+	// for (int i = 0; i < strlen(argvec); i++)
+	// {
+	// 	printf("%d : %s\n", i, argvec[i]);
+	// }
+	// 0 : mv
+	// 1 : test1.txt
+	// 2 : test4.txt
 
-	switch (argcnt)
-
+	// move to another dir
+	if (fs_isDir(argvec[2]))
 	{
-	//If argcnt is 3, then command can be used
-	case 3:
+		// printf("check is Dir\n");
+		
+		char * src;
+		char * dest;
+		int testfs_src_fd;
+		int testfs_dest_fd;
+		int readcnt;
+		char buf[BUFFERLEN];
 
-		source_File = argvec[1];
-		destination_File = argvec[2];
-		break;
+		src = argvec[1]; // test1.txt
+		// dest = argvec[2]; // h (dir)
 
-	//If argcnt value is not 3, print error 
-	default:
+		testfs_src_fd = b_open (src, O_RDONLY);
+		// testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);	
 
-		printf("cmd_mv: Too few or too many invalid arguments\n");
-		return -1;
+		// cd to argvec[2] dir
+		char * path = argvec[2];	//argument
+	
+		if (path[0] == '"')
+		{
+			if (path[strlen(path)-1] == '"')
+			{
+			//remove quotes from string
+			path = path + 1;
+			path[strlen(path) - 1] = 0;
+			}
+		}
+		// printf("before keep\n");
+		char * dir_buf = malloc (DIRMAX_LEN +1);
+		char * cwd_keep;
+		cwd_keep = fs_getcwd(dir_buf, DIRMAX_LEN);
+		// free(dir_buf);
+		// dir_buf = NULL;
+		printf("cwd_keep: %s\n", cwd_keep);
+		int ret = fs_setcwd (path);
+		if (ret != 0)	//error
+		{
+			printf ("Could not change path to %s\n", path);
+			return (ret);
+		}
+
+		// make a new file in the diirectory we go to
+		testfs_dest_fd = fs_mkFile(argvec[1], 0777);
+
+		do 
+		{
+			// read argvec[1] file
+			readcnt = b_read (testfs_src_fd, buf, BUFFERLEN);
+
+			// wrtie a new file copied from argvec[1]
+			b_write (testfs_dest_fd, buf, readcnt);
+			} while (readcnt == BUFFERLEN);
+
+		b_close (testfs_src_fd);
+		b_close (testfs_dest_fd);
+
+		// go back to the original directory
+		if (cwd_keep[strlen(cwd_keep)-1] == '/')
+		{
+			cwd_keep[strlen(cwd_keep)-1] = '\0';
+		}
+		printf("cwd_keep before add dot: %s\n", cwd_keep);
+		if (strcmp(cwd_keep, ".") == 0)  // ./h
+		{
+			strcat(cwd_keep, ".");
+			printf("cwd_keep after add dot: %s\n", cwd_keep);
+			fs_setcwd(cwd_keep);
+		}
+		free(dir_buf);
+		dir_buf = NULL;
+		cwd_keep = NULL;
+
+		// // inside another dir to copy
+		// char * temp = fs_getcwd(dir_buf, DIRMAX_LEN);
+		// printf("temp = %s\n", temp);
+		// // free(dir_buf);
+		// // dir_buf = NULL;
+		// char * dot;
+		// strcat(dot, "..");
+
+		// if (strcmp(temp, cwd_keep) != 0)
+		// {
+		// 	// if (dot[0] == '"')
+		// 	// {
+		// 	// 	if (dot[strlen(dot)-1] == '"')
+		// 	// 	{
+		// 	// 	//remove quotes from string
+		// 	// 	dot = dot + 1;
+		// 	// 	dot[strlen(dot) - 1] = 0;
+		// 	// 	}
+		// 	// }
+		// 	printf("insdie if statement\n");
+		// 	// fs_setcwd("..");
+		// }
+
+		// delete the previous file
+		fs_delete(argvec[1]);
+
+		// free(dir_buf);
+		// dir_buf = NULL;
+	}
+	
+	if (!fs_isDir(argvec[2]))
+	{
+		printf("check is not Dir\n");
+		// rename a file
+		// do same thing as cmd_cp
+		char * src;
+		char * dest;
+		int testfs_src_fd;
+		int testfs_dest_fd;
+		int readcnt;
+		char buf[BUFFERLEN];
+
+		src = argvec[1];
+		dest = argvec[2];
+
+		testfs_src_fd = b_open (src, O_RDONLY);
+		testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);	
+
+		do 
+			{
+			readcnt = b_read (testfs_src_fd, buf, BUFFERLEN);
+			b_write (testfs_dest_fd, buf, readcnt);
+			} while (readcnt == BUFFERLEN);
+		b_close (testfs_src_fd);
+		b_close (testfs_dest_fd);
+
+		// delete the previous file
+		fs_delete(argvec[1]);
 	}
 
-	//If source item is not of type file, print error 
-	if (!fs_isFile(source_File))
-	{
-		printf("The entry: %s is not of type file\n", source_File);
-		return -1;
-	}
-
-	//Using b_open(), create the file in the destination location
-	//by using the source location of file as a starting point 
-	src_LocationTo = b_open(source_File, O_RDONLY);
-	dest_LocationTo = b_open(destination_File, O_WRONLY | O_CREAT | O_TRUNC);
-
-	//Using b_read(), read from the file's source location 
-	//and using b_write(), write to the file's destination location
-	do
-	{
-		read_FileIndicator = b_read(src_LocationTo, move_Buffer, BUFFERLEN);
-		write_FileIndicator = b_write(dest_LocationTo, move_Buffer, read_FileIndicator);
-
-	} while (read_FileIndicator == BUFFERLEN && write_FileIndicator >= 0);
-
-	//If our read and write indicator is equal to our bufferlength, and is
-	//0 or greater, then we can close the files in the source and destination
-	b_close(src_LocationTo);
-	b_close(dest_LocationTo);
-
-	//Check if the file has changed location, only then
-	//we can delete the file from the source location
-	if (read_FileIndicator >= 0 && writeCount >= 0)
-	{
-		fs_delete(source_File);
-	}
-
-	else
-
-	{
-		printf("Source file: %s cannot be deleted/n", source_File);
-		return -1;
-	}
-
+	return -99;
 #endif
 	return 0;
-}
+	}
 
 /****************************************************
 *  Make Directory commmand
