@@ -17,6 +17,7 @@
 
 #include "mfs.h"
 #include "helperFunctions.h"
+// #include "helperFunctions.c"
 
 #define MAX_ENTRIES_NUMBER 8
 #define MAX_NAME_LENGTH 256

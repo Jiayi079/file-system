@@ -23,8 +23,9 @@
 
 #include "fsLow.h"
 #include "mfs.h"
-#include "mfs.c"
+// #include "mfs.c"
 #include "helperFunctions.h"
+#include "helperFunctions.c"
 
 #define Magic_Number 0x434A434A //"JCJC" converted to Hex (Big Endian)
 

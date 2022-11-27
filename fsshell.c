@@ -28,7 +28,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 #include "b_io.h"
-#include "b_io.c"
+// #include "b_io.c"
 
 #define PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
