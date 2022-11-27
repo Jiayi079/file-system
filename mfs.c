@@ -681,26 +681,34 @@ char * get_path_last_slash(char * path)
     return left_path;
 }
 
-int updateByLBAwrite(void *fdDir, uint64_t length, uint64_t startingPosition)
+//Function to write back data into our volume 
+int LBAwrtie_func(void * fdDir, uint64_t length, uint64_t startingPosition)
 {
-    // set up a clean buffer to copy data
-    uint64_t blockCount = getBlockCount(length);
-    uint64_t fullBlockSize = blockCount * JCJC_VCB->blockSize;
-    char *buffer = malloc(fullBlockSize);
-    if (buffer == NULL)
+    uint64_t fullBlockSize = getVCB_BlockCount(length) * JCJC_VCB->blockSize;
+
+    //Malloc a temp_LBABuffer to copy data to 
+    char *temp_LBABuffer = malloc(fullBlockSize);
+
+    //If the temp temp_LBABuffer is not NULL, then set this
+    //temp_LBABuffer into our VCB, otherwise, print error message
+    if (temp_LBABuffer != NULL)
     {
-        printf("malloc() on buffer failed\n");
+        memset(temp_LBABuffer, 0, fullBlockSize);
+    }
+    else
+    {
+        printf("Failed to mallod temp_LBABuffer\n");
         return -1;
     }
 
-    memset(buffer, 0, fullBlockSize);
+    //Copy the data froom the buffer so that we can
+    //write it into our volume using LBAwrite()
+    memcpy(temp_LBABuffer, fdDir, length);
+    LBAwrite(temp_LBABuffer, getVCB_BlockCount(length), startingPosition);
 
-    // copy the data and then write using LBAwrite()
-    memcpy(buffer, fdDir, length);
-    LBAwrite(buffer, blockCount, startingPosition);
-
-    free(buffer);
-    buffer = NULL;
+    //Free our temp buffer and set it to NULL
+    free(temp_LBABuffer);
+    temp_LBABuffer = NULL;
     return 0;
 }
 
