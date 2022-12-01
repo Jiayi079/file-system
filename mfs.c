@@ -19,8 +19,8 @@
 #include "helperFunctions.h"
 // #include "helperFunctions.c"
 
-#define MAX_ENTRIES_NUMBER 8
-#define MAX_NAME_LENGTH 256
+//#define MAX_ENTRIES_NUMBER 8
+//#define MAX_NAME_LENGTH 256
 
 // The mkdir() function creates a new, empty directory with a given name filename
 // return 0  -> successfully
@@ -101,7 +101,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
         else
         {
             printf("[mfs.c -- fs_mkdir] malloc createdDir failed\n");
-            return NULL;
+            return -1;
         }
 
         // initialize the directory and allocate the space for it
@@ -115,7 +115,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
         else
         {
             printf("[mfs.c -- mkdir] don't have enough free space\n");
-            return NULL;
+            return -1;
         }
 
         // check if new_dir_name is too long
@@ -125,7 +125,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
             if (tempName == NULL)
             {
                 printf("[mfs.c -- mkdir] malloc tempName failed\n");
-                return NULL;
+                return -1;
             }
             else
             {
@@ -184,7 +184,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
                 parent_dir->dirEntry[i].d_reclen = sizeof(struct Directory_Entry);
                 parent_dir->dirEntry[i].fileType = DIR_TYPE;
                 parent_dir->dirEntry[i].dir_Location = createdDir->directoryStartLocation;
-                printf("dir_location in mkdir: %d\n", parent_dir->dirEntry[i].dir_Location);
+                //printf("dir_location in mkdir: %d\n", parent_dir->dirEntry[i].dir_Location);
                 parent_dir->dirEntry[i].dirUsed = SPACE_IN_USED;
                 parent_dir->dirEntry[i].fileSize = sizeof(fdDir);
                 strcpy(parent_dir->dirEntry[i].file_name, createdDir->d_name);
@@ -292,7 +292,7 @@ int fs_mkFile(const char *pathname, mode_t mode)
             if (parent_dir->dirEntry[i].dirUsed == SPACE_IN_USED &&
                 strcmp(parent_dir->dirEntry[i].file_name, new_file_name) == 0)
             {
-                printf("[mfs.c -- mkFile] name already exsist in directory, ");
+                printf("check name already exsist in directory, ");
                 printf("you may want to copy file\n");
 
                 // avoid memory leak
@@ -316,7 +316,7 @@ int fs_mkFile(const char *pathname, mode_t mode)
         else
         {
             printf("[mfs.c -- fs_mkdir] malloc createdDir failed\n");
-            return NULL;
+            return -1;
         }
 
         // initialize the directory and allocate the space for it
@@ -330,7 +330,7 @@ int fs_mkFile(const char *pathname, mode_t mode)
         else
         {
             printf("[mfs.c -- mkdir] don't have enough free space\n");
-            return NULL;
+            return -1;
         }
 
         // check if new_file_name is too long
@@ -340,7 +340,7 @@ int fs_mkFile(const char *pathname, mode_t mode)
             if (tempName == NULL)
             {
                 printf("[mfs.c -- mkdir] malloc tempName failed\n");
-                return NULL;
+                return -1;
             }
             else
             {
@@ -875,7 +875,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
         if (dirp->dirEntry[check_de_index].dirUsed == SPACE_IN_USED)
         {
             openedDirEntryIndex = check_de_index + 1;
-            return dirp->dirEntry + check_de_index;
+            return (dirp->dirEntry + check_de_index);
         }
         check_de_index++;
     }
@@ -1228,10 +1228,10 @@ int releaseFreespace(uint64_t start, uint64_t count)
         count < 1 ||
         start + count > JCJC_VCB->numberOfBlocks)
     {
-        printf("start: %d, count: %d\n", start, count);
+        //printf("start: %d, count: %d\n", start, count);
         printf("JCJC_VCB->freeSpace_BlockCount : %d\n",JCJC_VCB->freeSpace_BlockCount);
         printf("JCJC_VCB->VCB_blockCount : %d\n",JCJC_VCB->VCB_blockCount);
-        printf("JCJC_VCB->numberOfBlocks : %d\n",JCJC_VCB->numberOfBlocks);
+        printf("JCJC_VCB->numberOfBlocks : %ld\n",JCJC_VCB->numberOfBlocks);
         printf("invalid arg in releaseFreespace\n");
         return -2;
     }
@@ -1247,7 +1247,7 @@ int releaseFreespace(uint64_t start, uint64_t count)
             // we should mark those back in order to recover
             for (i--; i >= 0; i--)
             {
-                setBitUsed(start + i, freespace);
+                setBitFree(start + i, freespace);
             }
             return -1;
         }
@@ -1346,3 +1346,97 @@ int fs_delete(char* filename)
     return 0;
 }
 
+// check the directory already contains the file name (argvec[1]) or not
+// usually used in mv cmd, when user want to move a file to another directory
+// we  have to check if the file name already exists in this new directory or not
+// return 1 -> contains the file name
+// return 0 -> doesn't contain the file name
+int checkContainFile(char * filename)
+{
+    //We keep tempCWD for later use to copy back to the fs_CWD,
+    // since we have to set the root directory as fs_CWD
+    // printf("check checkContainFile filename: %s\n", filename);
+    fdDir *tempCWD = fs_CWD;
+
+    //Initialize an open directory indicator, and if the root directory
+    //contains any data in it, then the directory will be marked as open
+    int dirIsOpened = 0;
+    if (rootDir != NULL)
+    {
+        dirIsOpened = 1;
+        fs_CWD = rootDir;
+    }
+
+    //Make a copy of the file's path and substring the path with a 
+    //slash by calling parsePath() function
+    char *pathExculdeLastSlash = malloc(strlen(filename) + 1);
+    if (pathExculdeLastSlash != NULL)
+    {
+        strcpy(pathExculdeLastSlash, filename);
+    }
+    else
+    {
+        printf("[mfs.c -- checkContainFile] malloc pathExculdeLastSlash failed in checkContainFile()\n");
+        return -1;
+    }
+
+    char *getfilename = get_path_last_slash(pathExculdeLastSlash);
+
+    //Find the directory that contains this specific file by 
+    //calling yhe parsePath() function
+    fdDir *filePathDir = parsePath(pathExculdeLastSlash);
+
+    //If the file doesn't exist, this will automatically 
+    //not run this if statement
+    if (filePathDir != NULL)
+    {
+        //Check if the file item is inside this directory
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+        {
+            //Check if the directory entry is marked as used, 
+            //is of type file, and if the directory name matches
+            //the expected dir name
+            // printf("filePathDir->dirEntry[i].fileType = %d\n", filePathDir->dirEntry[i].fileType);
+            // printf("filePathDir->dirEntry[i].file_name = %s\n", filePathDir->dirEntry[i].file_name);
+            if (filePathDir->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                filePathDir->dirEntry[i].fileType == FILE_TYPE &&
+                strcmp(filePathDir->dirEntry[i].file_name, getfilename) == 0)
+            {
+
+                //Set the directory pointer from tempCWD back to fs_CWD
+                if (dirIsOpened)
+                {
+                    fs_CWD = tempCWD;
+                }
+
+                //Free our filePathDir and pointers
+                //and set all to NULL for next operation
+                free(filePathDir);
+                filePathDir = NULL;
+                free(pathExculdeLastSlash);
+                pathExculdeLastSlash = NULL;
+                free(getfilename);
+                getfilename = NULL;
+
+                return 1;
+            }
+        }
+    }
+
+    //Set the directory pointer from tempCWD back to fs_CWD
+    if (dirIsOpened)
+    {
+        fs_CWD = tempCWD;
+    }
+
+    //Free our filePathDir and pointers
+    //and set all to NULL for next operation
+    free(filePathDir);
+    filePathDir = NULL;
+    free(pathExculdeLastSlash);
+    pathExculdeLastSlash = NULL;
+    free(getfilename);
+    getfilename = NULL;
+
+    return 0;
+}

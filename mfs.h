@@ -115,6 +115,7 @@ unsigned int getVCB_BlockCount(uint64_t bl_number);
 fdDir * parseEntry(struct Directory_Entry * entry);
 char * get_path_last_slash(char * path);
 fdDir * parsePath(char * name);
+int checkContainFile(char * filename);
 
 int LBAwrtie_func(void * fdDir, uint64_t length, uint64_t startingPosition);
 
