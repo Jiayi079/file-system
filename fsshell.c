@@ -376,6 +376,18 @@ int cmd_mv (int argcnt, char *argvec[])
 	// 0 : mv
 	// 1 : test1.txt
 	// 2 : test4.txt
+	
+	// firstly, we have to check if the user only input one filename
+	// suchas: mv test1.txt
+	// in this way we can do nothing things the arguments isn't finished
+	// correct example: mv test1.txt h       		mv test1.txt test2.txt
+	// 					move test1.txt to h dir   	move test1.txt beocme test2.txt in same dir
+	// printf("argvec[2]: %s\n", argvec[2]);
+	if (argvec[2] == NULL)
+	{
+		printf("please enter a whole argument \nfor example: mv [filename] [dir name/filename]\n");
+		return 0;
+	}
 
 	// move to another dir
 	if (fs_isDir(argvec[2]))
@@ -392,9 +404,10 @@ int cmd_mv (int argcnt, char *argvec[])
 		src = argvec[1]; // test1.txt
 		// dest = argvec[2]; // h (dir)
 
+		// printf("debug test1\n");
 		testfs_src_fd = b_open (src, O_RDONLY);
 		// testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);	
-
+		// printf("debug test2\n");
 		// cd to argvec[2] dir
 		char * path = argvec[2];	//argument
 	
@@ -407,13 +420,14 @@ int cmd_mv (int argcnt, char *argvec[])
 			path[strlen(path) - 1] = 0;
 			}
 		}
+		// printf("debug test3\n");
 		// printf("before keep\n");
 		char * dir_buf = malloc (DIRMAX_LEN +1);
 		char * cwd_keep;
 		cwd_keep = fs_getcwd(dir_buf, DIRMAX_LEN);
 		// free(dir_buf);
 		// dir_buf = NULL;
-		printf("cwd_keep: %s\n", cwd_keep);
+		// printf("cwd_keep: %s\n", cwd_keep);
 		int ret = fs_setcwd (path);
 		if (ret != 0)	//error
 		{
@@ -421,8 +435,34 @@ int cmd_mv (int argcnt, char *argvec[])
 			return (ret);
 		}
 
-		// make a new file in the diirectory we go to
-		testfs_dest_fd = fs_mkFile(argvec[1], 0777);
+		// printf("check contain file\n");
+		// check if the new dir already exists the same name file
+		if (checkContainFile(argvec[1]))
+		{
+			printf("File: %s already exists in directory: %s\n", argvec[1], argvec[2]);
+			// return back to the previous directory
+			// go back to the original directory
+			if (cwd_keep[strlen(cwd_keep)-1] == '/')
+			{
+				cwd_keep[strlen(cwd_keep)-1] = '\0';
+			}
+			// printf("cwd_keep before add dot: %s\n", cwd_keep);
+			if (strcmp(cwd_keep, ".") == 0)  // ./h
+			{
+				strcat(cwd_keep, ".");
+				// printf("cwd_keep after add dot: %s\n", cwd_keep);
+				fs_setcwd(cwd_keep);
+			}
+			free(dir_buf);
+			dir_buf = NULL;
+			cwd_keep = NULL;
+			return 0;
+		} else 
+		{
+			// make a new file in the diirectory we go to
+			testfs_dest_fd = fs_mkFile(argvec[1], 0777);
+		}
+		// printf("checkContainFile(argvec[1]): %d", checkContainFile(argvec[1]));
 
 		do 
 		{
@@ -441,11 +481,11 @@ int cmd_mv (int argcnt, char *argvec[])
 		{
 			cwd_keep[strlen(cwd_keep)-1] = '\0';
 		}
-		printf("cwd_keep before add dot: %s\n", cwd_keep);
+		// printf("cwd_keep before add dot: %s\n", cwd_keep);
 		if (strcmp(cwd_keep, ".") == 0)  // ./h
 		{
 			strcat(cwd_keep, ".");
-			printf("cwd_keep after add dot: %s\n", cwd_keep);
+			// printf("cwd_keep after add dot: %s\n", cwd_keep);
 			fs_setcwd(cwd_keep);
 		}
 		free(dir_buf);

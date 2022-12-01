@@ -141,7 +141,7 @@ b_io_fd b_open(char * filename, int flags)
 		}
 	}
 
-	// if flags == 1, means fileName is a file name not dir name
+	// if check == 1, means fileName is a file name not dir name
 	if (check == 1)
 	{
 		printf("Creating a file, filename: %s\n", fcbArray[returnFd].fileName);
@@ -173,6 +173,8 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
 	{
 		return (-1); // invalid file descriptor
 	}
+
+	printf("fd: %d, offset: %d, whence: %d\n", fd, offset, whence);
 
 	return (0); // Change this
 }

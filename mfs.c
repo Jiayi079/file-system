@@ -292,7 +292,7 @@ int fs_mkFile(const char *pathname, mode_t mode)
             if (parent_dir->dirEntry[i].dirUsed == SPACE_IN_USED &&
                 strcmp(parent_dir->dirEntry[i].file_name, new_file_name) == 0)
             {
-                printf("[mfs.c -- mkFile] name already exsist in directory, ");
+                printf("check name already exsist in directory, ");
                 printf("you may want to copy file\n");
 
                 // avoid memory leak
@@ -1346,3 +1346,97 @@ int fs_delete(char* filename)
     return 0;
 }
 
+// check the directory already contains the file name (argvec[1]) or not
+// usually used in mv cmd, when user want to move a file to another directory
+// we  have to check if the file name already exists in this new directory or not
+// return 1 -> contains the file name
+// return 0 -> doesn't contain the file name
+int checkContainFile(char * filename)
+{
+    //We keep tempCWD for later use to copy back to the fs_CWD,
+    // since we have to set the root directory as fs_CWD
+    // printf("check checkContainFile filename: %s\n", filename);
+    fdDir *tempCWD = fs_CWD;
+
+    //Initialize an open directory indicator, and if the root directory
+    //contains any data in it, then the directory will be marked as open
+    int dirIsOpened = 0;
+    if (rootDir != NULL)
+    {
+        dirIsOpened = 1;
+        fs_CWD = rootDir;
+    }
+
+    //Make a copy of the file's path and substring the path with a 
+    //slash by calling parsePath() function
+    char *pathExculdeLastSlash = malloc(strlen(filename) + 1);
+    if (pathExculdeLastSlash != NULL)
+    {
+        strcpy(pathExculdeLastSlash, filename);
+    }
+    else
+    {
+        printf("[mfs.c -- checkContainFile] malloc pathExculdeLastSlash failed in checkContainFile()\n");
+        return -1;
+    }
+
+    char *getfilename = get_path_last_slash(pathExculdeLastSlash);
+
+    //Find the directory that contains this specific file by 
+    //calling yhe parsePath() function
+    fdDir *filePathDir = parsePath(pathExculdeLastSlash);
+
+    //If the file doesn't exist, this will automatically 
+    //not run this if statement
+    if (filePathDir != NULL)
+    {
+        //Check if the file item is inside this directory
+        for (int i = 2; i < MAX_ENTRIES_NUMBER; i++)
+        {
+            //Check if the directory entry is marked as used, 
+            //is of type file, and if the directory name matches
+            //the expected dir name
+            // printf("filePathDir->dirEntry[i].fileType = %d\n", filePathDir->dirEntry[i].fileType);
+            // printf("filePathDir->dirEntry[i].file_name = %s\n", filePathDir->dirEntry[i].file_name);
+            if (filePathDir->dirEntry[i].dirUsed == SPACE_IN_USED &&
+                filePathDir->dirEntry[i].fileType == FILE_TYPE &&
+                strcmp(filePathDir->dirEntry[i].file_name, getfilename) == 0)
+            {
+
+                //Set the directory pointer from tempCWD back to fs_CWD
+                if (dirIsOpened)
+                {
+                    fs_CWD = tempCWD;
+                }
+
+                //Free our filePathDir and pointers
+                //and set all to NULL for next operation
+                free(filePathDir);
+                filePathDir = NULL;
+                free(pathExculdeLastSlash);
+                pathExculdeLastSlash = NULL;
+                free(getfilename);
+                getfilename = NULL;
+
+                return 1;
+            }
+        }
+    }
+
+    //Set the directory pointer from tempCWD back to fs_CWD
+    if (dirIsOpened)
+    {
+        fs_CWD = tempCWD;
+    }
+
+    //Free our filePathDir and pointers
+    //and set all to NULL for next operation
+    free(filePathDir);
+    filePathDir = NULL;
+    free(pathExculdeLastSlash);
+    pathExculdeLastSlash = NULL;
+    free(getfilename);
+    getfilename = NULL;
+
+    return 0;
+}
