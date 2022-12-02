@@ -39,8 +39,8 @@ Congcheng Zeng | Congchengz |
 
 ## Screenshot
 ![image](https://user-images.githubusercontent.com/89435466/205288088-4e9f6002-be91-4622-8979-1d405c8e6624.png)
-![image](https://user-images.githubusercontent.com/89435466/205288124-e0317cdd-93db-43a0-9dff-8cade62f1a6b.png)
-![image](https://user-images.githubusercontent.com/89435466/205288160-fa4820e2-be37-4d8a-b855-5f5fbd462d06.png)
+![image](https://user-images.githubusercontent.com/89435466/205288413-ca2ffa5c-6110-4447-b466-2c8bb4571ea3.png)
+![image](https://user-images.githubusercontent.com/89435466/205288456-e4fb23e7-91dd-4ca1-998b-43946a876975.png)
 ![image](https://user-images.githubusercontent.com/89435466/205288204-8c81a62a-5ce0-407c-8b94-39068307b4ba.png)
 ![image](https://user-images.githubusercontent.com/89435466/205288231-618b27ab-a480-43e3-b36f-4a827530e740.png)
 ![image](https://user-images.githubusercontent.com/89435466/205288261-f66b0a52-e47b-40d6-8e8c-786e4c0483ba.png)
